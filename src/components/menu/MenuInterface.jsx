@@ -16,7 +16,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
 
   return (
     <div className="min-h-screen bg-[#1F1D2B] font-sans pb-24 text-gray-100 selection:bg-[#ea7c69] selection:text-white overflow-x-hidden">
-      {/* --- HEADER (From First Snippet) --- */}
+      {/* --- HEADER --- */}
       <div className="sticky top-0 z-20 border-b border-white/5 shadow-2xl transition-all bg-[#1F1D2B]">
         {/* Background Overlay */}
         {restaurant.bg_image ? (
@@ -71,26 +71,20 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             </div>
           </div>
 
-          {/* --- ELASTIC SMART PILLS (From Second Snippet) --- */}
+          {/* --- CATEGORIES PILLS --- */}
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-6 min-h-[70px]">
             {categories?.map((cat) => {
               const isActive = activeCategory === cat.id;
-
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  // Elastic animation on width
-                  className={`
-                    relative h-[50px] rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex-shrink-0 group
-                    ${
-                      isActive
-                        ? "w-[160px] shadow-[0_0_20px_-5px_#ea7c69]" // Expanded state
-                        : "w-[50px] bg-[#252836] border border-white/10 hover:bg-[#2d303e]" // Collapsed state
-                    }
-                `}
+                  className={`relative h-[50px] rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] flex-shrink-0 group ${
+                    isActive
+                      ? "w-[160px] shadow-[0_0_20px_-5px_#ea7c69]"
+                      : "w-[50px] bg-[#252836] border border-white/10 hover:bg-[#2d303e]"
+                  }`}
                 >
-                  {/* 1. Background Image (Visible when active) */}
                   {isActive && cat.image_url && (
                     <div className="absolute inset-0 z-0">
                       <img
@@ -101,8 +95,6 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                       <div className="absolute inset-0 bg-[#ea7c69]/40 mix-blend-overlay"></div>
                     </div>
                   )}
-
-                  {/* 2. Small Icon (Visible when collapsed) */}
                   <div
                     className={`absolute z-10 transition-all duration-300 ${
                       isActive ? "opacity-0 scale-50" : "opacity-100 scale-100"
@@ -117,28 +109,20 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                       <span className="text-lg">🍔</span>
                     )}
                   </div>
-
-                  {/* 3. Text and Counter (Visible when active) */}
                   <div
-                    className={`
-                    absolute z-10 flex items-center gap-2 px-4 transition-all duration-500 delay-100
-                    ${
+                    className={`absolute z-10 flex items-center gap-2 px-4 transition-all duration-500 delay-100 ${
                       isActive
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-10"
-                    }
-                `}
+                    }`}
                   >
                     <span className="text-sm font-bold text-white drop-shadow-md whitespace-nowrap">
                       {getTitle(cat.title)}
                     </span>
-                    {/* Small Counter */}
                     <span className="bg-white/20 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-mono text-white">
                       {cat.products?.length}
                     </span>
                   </div>
-
-                  {/* Rotating Glow Effect */}
                   {isActive && (
                     <div className="absolute inset-0 border-2 border-white/20 rounded-full z-20"></div>
                   )}
@@ -149,7 +133,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         </div>
       </div>
 
-      {/* --- MAIN CONTENT (Minimal Grid) --- */}
+      {/* --- MAIN GRID --- */}
       <div className="p-4 pt-2 min-h-[60vh]">
         {categories?.map((cat) => (
           <div
@@ -158,7 +142,6 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
               activeCategory === cat.id ? "block" : "hidden"
             } animate-in fade-in zoom-in-95 duration-500`}
           >
-            {/* Divider */}
             <div className="flex items-center gap-4 mb-6 opacity-50">
               <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent flex-1"></div>
               <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
@@ -180,7 +163,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         ))}
       </div>
 
-      {/* --- CART BAR (Floating Pill) --- */}
+      {/* --- CART BAR --- */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-30">
         <button className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] text-white py-4 rounded-3xl shadow-[0_20px_40px_-10px_rgba(234,124,105,0.5)] flex items-center justify-between px-6 active:scale-95 transition-all border border-white/20 backdrop-blur-xl">
           <div className="flex flex-col items-start leading-none">
@@ -198,7 +181,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         </button>
       </div>
 
-      {/* --- MODAL (UPDATED FOR AR) --- */}
+      {/* --- MODAL (AR READY) --- */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
@@ -206,32 +189,34 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             onClick={() => setSelectedProduct(null)}
           ></div>
           <div className="bg-[#252836] w-full max-w-md rounded-t-[40px] sm:rounded-[40px] relative z-10 border-t border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500">
-            <div className="h-80 relative group bg-[#1a1c25]">
+            <div className="h-80 relative group bg-[#1a1c25] w-full">
               {selectedProduct.model_url ? (
                 <div className="w-full h-full">
-                  {/* --- MODEL VIEWER WITH AR --- */}
+                  {/* === MODEL VIEWER SETTINGS === */}
                   <model-viewer
                     src={selectedProduct.model_url}
                     alt={getTitle(selectedProduct.title)}
                     ar // فعال کردن AR
-                    ar-modes="webxr scene-viewer quick-look" // مودهای استاندارد
-                    auto-rotate
+                    ar-modes="webxr scene-viewer quick-look" // پشتیبانی اندروید و iOS
+                    ar-placement="floor" // تشخیص سطوح (میز)
+                    ar-scale="auto" // مقیاس واقعی
                     camera-controls
+                    auto-rotate
                     shadow-intensity="1"
                     style={{ width: "100%", height: "100%" }}
                   >
-                    {/* دکمه کاستوم برای باز کردن دوربین */}
+                    {/* === AR BUTTON (Mobile Optimized) === */}
                     <button
                       slot="ar-button"
-                      className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center gap-2 active:scale-95 transition-transform z-50 animate-bounce cursor-pointer"
+                      className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-[0_0_25px_rgba(255,255,255,0.5)] flex items-center gap-2 active:scale-95 transition-transform z-50 animate-bounce cursor-pointer border-2 border-white/50"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
+                        className="h-6 w-6 text-black"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                       >
                         <path
                           strokeLinecap="round"
@@ -244,7 +229,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                           d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span className="uppercase tracking-wider text-xs whitespace-nowrap">
+                      <span className="uppercase tracking-wider text-xs font-black whitespace-nowrap">
                         View on your Table
                       </span>
                     </button>
@@ -256,32 +241,38 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                   className="w-full h-full object-cover"
                 />
               )}
+              {/* گرادینت پایین برای خوانایی */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#252836] via-transparent to-transparent pointer-events-none"></div>
+
+              {/* دکمه بستن */}
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 bg-black/20 text-white w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center hover:bg-[#ea7c69] transition-colors border border-white/10 z-50"
+                className="absolute top-6 right-6 bg-black/40 text-white w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center hover:bg-[#ea7c69] transition-colors border border-white/10 z-50 shadow-lg"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-8 -mt-12 relative">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-white text-3xl font-black leading-tight w-3/4">
-                  {getTitle(selectedProduct.title)}
-                </h3>
-                <div className="bg-[#ea7c69] px-3 py-1.5 rounded-xl shadow-lg shadow-orange-900/30">
-                  <p className="text-white font-bold text-lg">
-                    {Number(selectedProduct.price).toLocaleString()}
-                  </p>
+            <div className="p-8 -mt-12 relative pointer-events-none">
+              {/* پنل اطلاعات (Pointer events auto میکنیم که دکمه ها کار کنن) */}
+              <div className="pointer-events-auto">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-white text-3xl font-black leading-tight w-3/4">
+                    {getTitle(selectedProduct.title)}
+                  </h3>
+                  <div className="bg-[#ea7c69] px-3 py-1.5 rounded-xl shadow-lg shadow-orange-900/30">
+                    <p className="text-white font-bold text-lg">
+                      {Number(selectedProduct.price).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
+                <p className="text-gray-400 text-sm mb-10 leading-relaxed font-light">
+                  {getTitle(selectedProduct.description)}
+                </p>
+                <button className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] py-5 rounded-2xl text-white font-bold text-lg shadow-xl shadow-orange-900/40 active:scale-95 transition-transform flex items-center justify-center gap-3">
+                  <span>Add to Cart</span>
+                </button>
               </div>
-              <p className="text-gray-400 text-sm mb-10 leading-relaxed font-light">
-                {getTitle(selectedProduct.description)}
-              </p>
-              <button className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] py-5 rounded-2xl text-white font-bold text-lg shadow-xl shadow-orange-900/40 active:scale-95 transition-transform flex items-center justify-center gap-3">
-                <span>Add to Cart</span>
-              </button>
             </div>
           </div>
         </div>
