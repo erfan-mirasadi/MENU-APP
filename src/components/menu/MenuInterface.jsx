@@ -198,7 +198,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         </button>
       </div>
 
-      {/* --- MODAL (Unchanged) --- */}
+      {/* --- MODAL (UPDATED FOR AR) --- */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
@@ -209,14 +209,46 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             <div className="h-80 relative group bg-[#1a1c25]">
               {selectedProduct.model_url ? (
                 <div className="w-full h-full">
+                  {/* --- MODEL VIEWER WITH AR --- */}
                   <model-viewer
                     src={selectedProduct.model_url}
                     alt={getTitle(selectedProduct.title)}
+                    ar // فعال کردن AR
+                    ar-modes="webxr scene-viewer quick-look" // مودهای استاندارد
                     auto-rotate
                     camera-controls
                     shadow-intensity="1"
                     style={{ width: "100%", height: "100%" }}
-                  ></model-viewer>
+                  >
+                    {/* دکمه کاستوم برای باز کردن دوربین */}
+                    <button
+                      slot="ar-button"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center gap-2 active:scale-95 transition-transform z-50 animate-bounce cursor-pointer"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span className="uppercase tracking-wider text-xs whitespace-nowrap">
+                        View on your Table
+                      </span>
+                    </button>
+                  </model-viewer>
                 </div>
               ) : (
                 <img
@@ -224,10 +256,10 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                   className="w-full h-full object-cover"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#252836] via-transparent to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#252836] via-transparent to-transparent pointer-events-none"></div>
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 bg-black/20 text-white w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center hover:bg-[#ea7c69] transition-colors border border-white/10"
+                className="absolute top-6 right-6 bg-black/20 text-white w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center hover:bg-[#ea7c69] transition-colors border border-white/10 z-50"
               >
                 ✕
               </button>

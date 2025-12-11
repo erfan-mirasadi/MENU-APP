@@ -69,8 +69,6 @@ export default function Suggestions({ products }) {
 
             {/* 3. گرادینت تیره از پایین */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
-
-            {/* 4. محتوا */}
             <div className="absolute bottom-0 left-0 w-full p-5">
               <h3 className="text-white text-2xl font-black leading-none drop-shadow-md mb-1">
                 {getTitle(product.title)}
@@ -79,8 +77,6 @@ export default function Suggestions({ products }) {
               <p className="text-gray-300 text-xs line-clamp-1 font-light opacity-80 mb-3">
                 {getTitle(product.description)}
               </p>
-
-              {/* قیمت و دکمه */}
               <div className="flex items-end justify-between">
                 <div className="flex flex-col">
                   <span className="text-gray-400 text-xs line-through decoration-red-500 decoration-2 font-bold opacity-70">
@@ -101,8 +97,6 @@ export default function Suggestions({ products }) {
             </div>
           </div>
         ))}
-
-        {/* فضای خالی ته لیست که پشت دکمه نره */}
         <div className="h-20 w-full shrink-0"></div>
       </div>
     </div>
