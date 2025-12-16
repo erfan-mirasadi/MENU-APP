@@ -1,6 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 export default function ProductCard({ product, onClick }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getTitle = (obj) => {
     if (!obj) return "";
     return typeof obj === "object" ? obj["tr"] || obj["en"] : obj;
@@ -44,7 +53,7 @@ export default function ProductCard({ product, onClick }) {
 
           {/* Container Asli Model/Ax */}
           <div className="w-full h-full drop-shadow-[0_20px_20px_rgba(0,0,0,0.4)]">
-            {product.model_lowpoly_url ? (
+            {product.model_lowpoly_url && isMounted ? (
               <div className="w-full h-full">
                 <model-viewer
                   src={product.model_lowpoly_url}
@@ -52,7 +61,7 @@ export default function ProductCard({ product, onClick }) {
                   alt={getTitle(product.title)}
                   auto-rotate
                   rotation-per-second="25deg"
-                  camera-orbit="0deg 80deg 105%" // Zavie kameraye behtar
+                  camera-orbit="0deg 80deg 105%"
                   shadow-intensity="1"
                   shadow-softness="0.8"
                   disable-zoom

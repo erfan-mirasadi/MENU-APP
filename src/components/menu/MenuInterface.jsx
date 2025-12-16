@@ -103,6 +103,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                     {cat.image_url ? (
                       <img
                         src={cat.image_url}
+                        alt=""
                         className="w-6 h-6 object-contain grayscale opacity-70 group-hover:grayscale-0"
                       />
                     ) : (
@@ -181,7 +182,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         </button>
       </div>
 
-      {/* --- MODAL (AR READY) --- */}
+      {/* --- MODAL (AR READY - FINAL SIMPLIFIED) --- */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
@@ -192,47 +193,49 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             <div className="h-80 relative group bg-[#1a1c25] w-full">
               {selectedProduct.model_url ? (
                 <div className="w-full h-full">
-                  {/* === MODEL VIEWER SETTINGS === */}
+                  {/* === MODEL VIEWER (CLEAN VERSION) === */}
                   <model-viewer
+                    // 1. Source
                     src={
                       selectedProduct.model_url ||
                       selectedProduct.model_lowpoly_url
                     }
-                    // ios-src رو حتما پاک کن (خالی نذار، کلا اون خط رو حذف کن)
-
+                    // 2. Poster (ساده‌ترین حالت - اگر عکس بود نشون بده)
                     poster={selectedProduct.image_url}
                     alt={getTitle(selectedProduct.title)}
-                    // --- AR SETTINGS ---
+                    // 3. AR Settings
                     ar
                     ar-modes="webxr scene-viewer quick-look"
-                    ar-placement="floor"
-                    // نکته طلایی: این "auto" باعث میشه مدل رو زورکی اندازه‌ی محیط کنه
-                    // یعنی اگر مدل ۱۰ متر باشه، کوچیکش میکنه تا روی میز جا بشه
                     ar-scale="auto"
-                    // --- CAMERA ---
+                    ar-placement="floor"
+                    // 4. Configs
+                    loading="eager"
                     camera-controls
                     auto-rotate
                     shadow-intensity="1"
-                    touch-action="pan-y"
-                    // scale دستی رو فعلا حذف کن تا با ar-scale تداخل نخوره
                     style={{ width: "100%", height: "100%", outline: "none" }}
                   >
-                    {/* دکمه و لودینگ بار همون قبلی */}
-                    <button slot="ar-button" className="...">
-                      ...
+                    {/* AR BUTTON */}
+                    <button
+                      slot="ar-button"
+                      className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#ea7c69] text-white h-12 px-8 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-all z-50 cursor-pointer border border-white/20"
+                    >
+                      <span className="text-xl">📦</span>
+                      <span className="whitespace-nowrap text-sm font-bold tracking-wide">
+                        Show on Table
+                      </span>
                     </button>
                   </model-viewer>
                 </div>
               ) : (
                 <img
                   src={selectedProduct.image_url}
+                  alt=""
                   className="w-full h-full object-cover"
                 />
               )}
-              {/* گرادینت پایین برای خوانایی */}
+              {/* Gradient & Close Button */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#252836] via-transparent to-transparent pointer-events-none"></div>
-
-              {/* دکمه بستن */}
               <button
                 onClick={() => setSelectedProduct(null)}
                 className="absolute top-6 right-6 bg-black/40 text-white w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center hover:bg-[#ea7c69] transition-colors border border-white/10 z-50 shadow-lg"
@@ -242,7 +245,7 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             </div>
 
             <div className="p-8 -mt-12 relative pointer-events-none">
-              {/* پنل اطلاعات (Pointer events auto میکنیم که دکمه ها کار کنن) */}
+              {/* Content Panel */}
               <div className="pointer-events-auto">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-white text-3xl font-black leading-tight w-3/4">
