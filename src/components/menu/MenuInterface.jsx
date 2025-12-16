@@ -192,47 +192,60 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             <div className="h-80 relative group bg-[#1a1c25] w-full">
               {selectedProduct.model_url ? (
                 <div className="w-full h-full">
-                  {/* === MODEL VIEWER SETTINGS === */}
                   <model-viewer
                     src={selectedProduct.model_url}
+                    // اگر فایل USDZ داری برای آیفون اینجا بده، اگر نه که هیچی
+                    // ios-src={selectedProduct.model_url.replace(".glb", ".usdz")}
+
+                    poster={selectedProduct.image_url} // عکس قبل از لود شدن
                     alt={getTitle(selectedProduct.title)}
-                    ar // فعال کردن AR
-                    ar-modes="webxr scene-viewer quick-look" // پشتیبانی اندروید و iOS
-                    ar-placement="floor" // تشخیص سطوح (میز)
-                    ar-scale="auto" // مقیاس واقعی
+                    // --- تنظیمات حیاتی AR ---
+                    ar
+                    // ترتیب خیلی مهمه! اول scene-viewer (سریعتر برای اندروید)، بعد quick-look (آیفون)، آخر webxr
+                    ar-modes="scene-viewer quick-look webxr"
+                    ar-scale="fixed" // سایز رو قفل کن که کاربر گیج نشه مدل بزرگ/کوچیک شه
+                    ar-placement="floor" // تاکید روی سطح افقی (میز)
+                    // --- بهینه‌سازی پرفورمنس ---
+                    loading="eager" // اولویت دانلود بالا
+                    reveal="auto"
+                    shadow-intensity="1"
+                    shadow-softness="0.5"
                     camera-controls
                     auto-rotate
-                    shadow-intensity="1"
+                    touch-action="pan-y" // جلوگیری از تداخل اسکرول
                     style={{ width: "100%", height: "100%" }}
                   >
-                    {/* === AR BUTTON (Mobile Optimized) === */}
+                    {/* دکمه AR */}
                     <button
                       slot="ar-button"
-                      className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-[0_0_25px_rgba(255,255,255,0.5)] flex items-center gap-2 active:scale-95 transition-transform z-50 animate-bounce cursor-pointer border-2 border-white/50"
+                      className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-transform z-50 cursor-pointer border border-gray-200"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-black"
+                        className="h-6 w-6"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth={2.5}
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                          strokeWidth={2}
+                          d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"
                         />
                       </svg>
-                      <span className="uppercase tracking-wider text-xs font-black whitespace-nowrap">
-                        View on your Table
+                      <span className="uppercase tracking-wider text-xs font-black">
+                        See in AR
                       </span>
                     </button>
+
+                    {/* لودینگ کاستوم (وقتی داره زور میزنه مدل رو بیاره) */}
+                    <div
+                      slot="progress-bar"
+                      className="absolute top-0 left-0 w-full h-1 bg-white/10"
+                    >
+                      <div className="h-full bg-[#ea7c69] transition-all duration-300 logic-bar"></div>
+                    </div>
                   </model-viewer>
                 </div>
               ) : (
