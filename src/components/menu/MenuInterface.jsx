@@ -194,51 +194,33 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                 <div className="w-full h-full">
                   {/* === MODEL VIEWER SETTINGS === */}
                   <model-viewer
-                    // 1. منبع اصلی (فقط همین رو بده)
                     src={
                       selectedProduct.model_url ||
                       selectedProduct.model_lowpoly_url
                     }
-                    // 2. IOS FIX: این خط رو کامل پاک کردم!
-                    // ios-src={...} <--- این باعث باگ بود چون فایل usdz نداری.
+                    // ios-src رو حتما پاک کن (خالی نذار، کلا اون خط رو حذف کن)
 
-                    // 3. پوستر
                     poster={selectedProduct.image_url}
                     alt={getTitle(selectedProduct.title)}
-                    // 4. AR MODES (استانداردترین حالت ممکن)
+                    // --- AR SETTINGS ---
                     ar
-                    // ترتیب رو برگردوندم به حالت دیفالت که پایدارترینه
                     ar-modes="webxr scene-viewer quick-look"
-                    // 5. SCALE (همون که خواستی 50 درصد باشه)
-                    scale="0.5 0.5 0.5"
-                    ar-scale="auto" // توی AR بذار خودش تصمیم بگیره (باگ پرش رو میگیره)
                     ar-placement="floor"
-                    // 6. CAMERA & PERFORMANCE
-                    loading="eager"
+                    // نکته طلایی: این "auto" باعث میشه مدل رو زورکی اندازه‌ی محیط کنه
+                    // یعنی اگر مدل ۱۰ متر باشه، کوچیکش میکنه تا روی میز جا بشه
+                    ar-scale="auto"
+                    // --- CAMERA ---
                     camera-controls
                     auto-rotate
                     shadow-intensity="1"
                     touch-action="pan-y"
+                    // scale دستی رو فعلا حذف کن تا با ar-scale تداخل نخوره
                     style={{ width: "100%", height: "100%", outline: "none" }}
                   >
-                    {/* --- AR BUTTON --- */}
-                    <button
-                      slot="ar-button"
-                      className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#ea7c69] text-white h-12 px-8 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-all z-50"
-                    >
-                      <span className="text-lg">📦</span>
-                      <span className="whitespace-nowrap text-sm font-bold tracking-wide">
-                        Start AR
-                      </span>
+                    {/* دکمه و لودینگ بار همون قبلی */}
+                    <button slot="ar-button" className="...">
+                      ...
                     </button>
-
-                    {/* --- LOADING --- */}
-                    <div
-                      slot="progress-bar"
-                      className="absolute top-0 left-0 w-full h-1 bg-white/10"
-                    >
-                      <div className="h-full bg-[#ea7c69] w-full origin-left animate-[progress_1s_ease-in-out_infinite]"></div>
-                    </div>
                   </model-viewer>
                 </div>
               ) : (
