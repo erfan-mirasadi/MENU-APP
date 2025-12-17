@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
-export default function ProductCard({ product, onClick }) {
+// Prop "onAdd" ro ezafe kardim
+export default function ProductCard({ product, onClick, onAdd }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -22,7 +23,6 @@ export default function ProductCard({ product, onClick }) {
   return (
     <div
       onClick={onClick}
-      // mb-12 baraye fasele az payin, mt-24 baraye fazaye bala ke ax nazane biroon az kadr kolli
       className="group relative w-full max-w-[320px] mx-auto mt-24 mb-6 select-none"
     >
       {/*CONDITIONAL GLOW */}
@@ -32,9 +32,8 @@ export default function ProductCard({ product, onClick }) {
 
       {/* CARD BASE */}
       <div className="relative bg-[#252836] rounded-t-[40px] rounded-b-[24px] pt-20 pb-5 px-5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] border-t border-white/10 active:scale-[0.98] transition-transform duration-200">
-        {/* --- 3. FLOATING VISUAL  --- */}
+        {/* --- FLOATING VISUAL  --- */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-44 h-44 z-20">
-          {/* Indicator 3D (Floating Tag) */}
           {has3D && (
             <div className="absolute bottom-2 right-0 z-30">
               <button
@@ -52,7 +51,6 @@ export default function ProductCard({ product, onClick }) {
             </div>
           )}
 
-          {/* Container Asli Model/Ax */}
           <div className="relative w-full h-full drop-shadow-[0_20px_20px_rgba(0,0,0,0.4)]">
             {product.model_lowpoly_url && isMounted ? (
               <div className="w-full h-full">
@@ -86,7 +84,6 @@ export default function ProductCard({ product, onClick }) {
         </div>
 
         <div className="flex flex-col items-center text-center mt-2">
-          {/* TITLE: Height Fix Shode (h-[3.5rem]) ke 2 khat ja beshe */}
           <h3 className="text-white text-xl font-bold leading-tight w-full line-clamp-2 h-[3.5rem] flex items-center justify-center">
             {getTitle(product.title)}
           </h3>
@@ -111,15 +108,14 @@ export default function ProductCard({ product, onClick }) {
               </div>
             </div>
 
-            {/* Add Button (Creative Shape) */}
+            {/* --- ADD BUTTON --- */}
             <button
               onClick={(e) => {
-                e.stopPropagation();
-                // Add Logic
+                e.stopPropagation(); // Don't open modal
+                onAdd(); // Call the hook function
               }}
               className="relative overflow-hidden bg-[#ea7c69] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all"
             >
-              {/* Icon Plus */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -132,7 +128,6 @@ export default function ProductCard({ product, onClick }) {
                   clipRule="evenodd"
                 />
               </svg>
-              {/* Shine effect roye dokme */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>

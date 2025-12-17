@@ -3,10 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import ProductCard from "./ProductCard";
+import { useCart } from "@/app/hooks/useCart";
 
 export default function MenuInterface({ restaurant, categories, tableId }) {
   const [activeCategory, setActiveCategory] = useState(categories?.[0]?.id);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const { cartItems, addToCart, isLoading } = useCart(tableId);
+
+  const totalAmount = cartItems.reduce((sum, item) => {
+    return sum + item.unit_price_at_order * item.quantity;
+  }, 0);
+
+  const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const getTitle = (obj) => {
     if (!obj) return "";
@@ -170,6 +178,8 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                   key={product.id}
                   product={product}
                   onClick={() => setSelectedProduct(product)}
+                  // --- CONNECT ADD BUTTON ---
+                  onAdd={() => addToCart(product)}
                 />
               ))}
             </div>
@@ -177,25 +187,29 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
         ))}
       </div>
 
-      {/* --- CART BAR --- */}
+      {/* --- CART BAR (Live Data) --- */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-30">
         <button className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] text-white py-4 rounded-3xl shadow-[0_20px_40px_-10px_rgba(234,124,105,0.5)] flex items-center justify-between px-6 active:scale-95 transition-all border border-white/20 backdrop-blur-xl">
           <div className="flex flex-col items-start leading-none">
             <span className="text-[10px] font-bold opacity-80 uppercase tracking-wider">
               Total
             </span>
-            <span className="text-lg font-black">0 ₺</span>
+            {/* نمایش قیمت زنده */}
+            <span className="text-lg font-black">
+              {isLoading ? "..." : totalAmount.toLocaleString()} ₺
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-bold">View Cart</span>
-            <div className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center text-xs">
-              0
+            <div className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+              {/* نمایش تعداد زنده */}
+              {totalCount}
             </div>
           </div>
         </button>
       </div>
 
-      {/* --- MODAL (AR READY - FINAL SIMPLIFIED) --- */}
+      {/* --- MODAL (AR READY) --- */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
@@ -206,29 +220,23 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             <div className="h-80 relative group bg-[#1a1c25] w-full">
               {selectedProduct.model_url ? (
                 <div className="w-full h-full">
-                  {/* === MODEL VIEWER (CLEAN VERSION) === */}
                   <model-viewer
-                    // 1. Source
                     src={
                       selectedProduct.model_url ||
                       selectedProduct.model_lowpoly_url
                     }
-                    // 2. Poster (ساده‌ترین حالت - اگر عکس بود نشون بده)
                     poster={selectedProduct.image_url}
                     alt={getTitle(selectedProduct.title)}
-                    // 3. AR Settings
                     ar
                     ar-modes="webxr scene-viewer quick-look"
                     ar-scale="auto"
                     ar-placement="floor"
-                    // 4. Configs
                     loading="eager"
                     camera-controls
                     auto-rotate
                     shadow-intensity="1"
                     style={{ width: "100%", height: "100%", outline: "none" }}
                   >
-                    {/* AR BUTTON */}
                     <button
                       slot="ar-button"
                       className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#ea7c69] text-white h-12 px-8 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-all z-50 cursor-pointer border border-white/20"
@@ -241,15 +249,16 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                   </model-viewer>
                 </div>
               ) : (
-                <Image
-                  src={selectedProduct.image_url}
-                  alt=""
-                  fill
-                  sizes="(max-width: 640px) 100vw, 448px"
-                  className="object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={selectedProduct.image_url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, 448px"
+                    className="object-cover"
+                  />
+                </div>
               )}
-              {/* Gradient & Close Button */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#252836] via-transparent to-transparent pointer-events-none"></div>
               <button
                 onClick={() => setSelectedProduct(null)}
@@ -260,7 +269,6 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
             </div>
 
             <div className="p-8 -mt-12 relative pointer-events-none">
-              {/* Content Panel */}
               <div className="pointer-events-auto">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-white text-3xl font-black leading-tight w-3/4">
@@ -275,7 +283,15 @@ export default function MenuInterface({ restaurant, categories, tableId }) {
                 <p className="text-gray-400 text-sm mb-10 leading-relaxed font-light">
                   {getTitle(selectedProduct.description)}
                 </p>
-                <button className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] py-5 rounded-2xl text-white font-bold text-lg shadow-xl shadow-orange-900/40 active:scale-95 transition-transform flex items-center justify-center gap-3">
+                {/* --- CONNECT ADD BUTTON IN MODAL --- */}
+                <button
+                  onClick={() => {
+                    addToCart(selectedProduct);
+                    // اختیاری: اگر میخوای بعد از ادد شدن بسته بشه
+                    setSelectedProduct(null);
+                  }}
+                  className="w-full bg-[#ea7c69] hover:bg-[#ff8f7d] py-5 rounded-2xl text-white font-bold text-lg shadow-xl shadow-orange-900/40 active:scale-95 transition-transform flex items-center justify-center gap-3"
+                >
                   <span>Add to Cart</span>
                 </button>
               </div>
