@@ -7,14 +7,15 @@ export default function ProductCard({ product, onClick, onAdd }) {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef(null);
 
-  // --- VARIABLES ---
-  // فرض بر اینه که لینک ویدیو یا WebP رو توی این فیلد ذخیره کردی
-  const videoUrl = product.model_lowpoly_url;
-  const hasVideo = !!videoUrl;
+  // --- VARIABLES (Updated for Dual Source) ---
+  const iosUrl = product.animation_url_ios; // فایل مخصوص آیفون (.mov)
+  const androidUrl = product.animation_url_android; // فایل مخصوص اندروید/وب (.webm)
+
+  // شرط داشتن ویدیو: حداقل یکی از لینک‌ها موجود باشه
+  const hasVideo = !!(iosUrl || androidUrl);
   const isPromo = !!product.original_price;
 
   // --- 1. LAZY LOAD OBSERVER ---
-  // ویدیو فقط وقتی لود میشه که کاربر اسکرول کنه برسه بهش
   useEffect(() => {
     if (!hasVideo) return;
 
@@ -22,10 +23,10 @@ export default function ProductCard({ product, onClick, onAdd }) {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect(); // Stop observing once loaded
+          observer.disconnect();
         }
       },
-      { rootMargin: "100px" } // ۱۰۰ پیکسل قبل از رسیدن، لود رو شروع کن که پرش نداشته باشه
+      { rootMargin: "100px" }
     );
 
     if (cardRef.current) observer.observe(cardRef.current);
@@ -45,7 +46,7 @@ export default function ProductCard({ product, onClick, onAdd }) {
       onClick={onClick}
       className="group relative w-full max-w-[320px] mx-auto mt-24 mb-6 select-none cursor-pointer"
     >
-      {/* GLOW EFFECT (Only if video exists) */}
+      {/* GLOW EFFECT */}
       {hasVideo && (
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#ea7c69] opacity-20 blur-[60px] rounded-full pointer-events-none" />
       )}
@@ -73,18 +74,23 @@ export default function ProductCard({ product, onClick, onAdd }) {
           )}
 
           <div className="relative w-full h-full drop-shadow-[0_20px_20px_rgba(0,0,0,0.4)]">
-            {/* Logic: اگر ویدیو داشت و اسکرول رسید -> ویدیو پخش شه. در غیر این صورت -> عکس ثابت */}
             {hasVideo && isVisible ? (
+              // 🔥 تگ ویدیو هوشمند (بدون mix-blend-mode)
               <video
-                src={videoUrl}
                 autoPlay
-                // style={{ mixBlendMode: "screen" }}
                 loop
-                muted // حتما باید باشه وگرنه اتوپلی نمیشه
-                playsInline // برای iOS حیاتیه
-                className="w-full h-full object-contain mix-blend-screen animate-in fade-in duration-700"
-                // poster رو حذف کردم چون گفتی نمیخوای
-              />
+                muted
+                playsInline
+                className="w-full h-full object-contain animate-in fade-in duration-700"
+              >
+                {/* اولویت ۱: آیفون (HEVC) */}
+                {iosUrl && (
+                  <source src={iosUrl} type='video/quicktime; codecs="hvc1"' />
+                )}
+
+                {/* اولویت ۲: کروم/اندروید (WebM) */}
+                {androidUrl && <source src={androidUrl} type="video/webm" />}
+              </video>
             ) : (
               <Image
                 src={product.image_url}
@@ -110,7 +116,7 @@ export default function ProductCard({ product, onClick, onAdd }) {
             {getTitle(product.description)}
           </p>
 
-          {/* FOOTER: Price & Add Button */}
+          {/* FOOTER */}
           <div className="w-full mt-5 bg-[#1F1D2B] rounded-2xl p-3 flex items-center justify-between border border-white/5">
             <div className="flex flex-col items-start pl-1">
               {isPromo && (
