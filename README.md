@@ -44,10 +44,30 @@ src/
 └── lib/                      # Supabase Client & Utils
 ```
 
-🤝 Contributing
+## 📸 Screenshots
+
+<div align="center">
+
+### Modern Template (Dark)
+
+<img src="https://via.placeholder.com/300x600?text=Modern+UI" alt="Modern UI" width="250"/>
+
+### Classic Template (Light)
+
+<img src="https://via.placeholder.com/300x600?text=Classic+UI" alt="Classic UI" width="250"/>
+
+</div>
+
+---
+
+## 🤝 Contributing
+
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-Modern Template (Dark),Classic Template (Light)
-"<img src=""https://www.google.com/search?q=https://via.placeholder.com/300x600%3Ftext%3DModern%2BUI"" alt=""Modern UI"" width=""200""/>","<img src=""https://www.google.com/search?q=https://via.placeholder.com/300x600%3Ftext%3DClassic%2BUI"" alt=""Classic UI"" width=""200""/>"
+---
 
-<div align="center"> Built with ❤️ by <b>Erfan</b> </div>
+<div align="center">
+  
+Built with ❤️ by <b>Erfan</b>
+
+</div>
