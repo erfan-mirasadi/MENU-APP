@@ -44,8 +44,6 @@ export default function ClassicModal({ product, onClose, onAddToCart }) {
                 </button>
               </ARViewer>
             ) : (
-              // Fallback to Image if no 3D
-              // Note: You can use SmartMedia here too if you want video in modal
               <img
                 src={product.image_url}
                 alt=""

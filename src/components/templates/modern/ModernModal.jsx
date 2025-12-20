@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import ARViewer from "@/components/ui/ARViewer";
 

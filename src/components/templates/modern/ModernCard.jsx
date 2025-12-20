@@ -6,8 +6,6 @@ import SmartMedia from "@/components/ui/SmartMedia";
 export default function ModernCard({ product, onClick, onAdd }) {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef(null);
-
-  // برای افکت Glow
   const iosUrl = product.animation_url_ios;
   const androidUrl = product.animation_url_android;
   const hasVideo = !!(iosUrl || androidUrl);

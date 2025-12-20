@@ -12,7 +12,6 @@ export default function ClassicLayout({
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    // استایل کلی: فونت سریف، رنگ کاغذ کرم
     <main className="w-full min-h-screen bg-[#FDFBF7] text-[#2C1810] overflow-hidden font-serif selection:bg-[#D4AF37] selection:text-white">
       {/* Landing Layer */}
       <div

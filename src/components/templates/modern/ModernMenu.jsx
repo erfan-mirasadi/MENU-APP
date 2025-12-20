@@ -14,8 +14,6 @@ export default function ModernMenu({ restaurant, categories, tableId }) {
 
   const [activeCategory, setActiveCategory] = useState(categories?.[0]?.id);
   const [selectedProduct, setSelectedProduct] = useState(null);
-
-  // 2. State برای باز و بسته کردن مودال سبد خرید
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const totalAmount = cartItems.reduce((sum, item) => {
