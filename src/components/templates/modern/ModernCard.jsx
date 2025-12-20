@@ -1,21 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import SmartMedia from "@/components/ui/SmartMedia";
 
-export default function ProductCard({ product, onClick, onAdd }) {
+export default function ModernCard({ product, onClick, onAdd }) {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef(null);
 
-  // --- VARIABLES (Updated for Dual Source) ---
-  const iosUrl = product.animation_url_ios; // فایل مخصوص آیفون (.mov)
-  const androidUrl = product.animation_url_android; // فایل مخصوص اندروید/وب (.webm)
-
-  // شرط داشتن ویدیو: حداقل یکی از لینک‌ها موجود باشه
+  // برای افکت Glow
+  const iosUrl = product.animation_url_ios;
+  const androidUrl = product.animation_url_android;
   const hasVideo = !!(iosUrl || androidUrl);
+
   const isPromo = !!product.original_price;
 
-  // --- 1. LAZY LOAD OBSERVER ---
+  // همون IntersectionObserver قبلی برای تریگر کردن
   useEffect(() => {
     if (!hasVideo) return;
 
@@ -34,7 +33,6 @@ export default function ProductCard({ product, onClick, onAdd }) {
     return () => observer.disconnect();
   }, [hasVideo]);
 
-  // --- HELPER ---
   const getTitle = (obj) => {
     if (!obj) return "";
     return typeof obj === "object" ? obj["tr"] || obj["en"] : obj;
@@ -46,7 +44,7 @@ export default function ProductCard({ product, onClick, onAdd }) {
       onClick={onClick}
       className="group relative w-full max-w-[320px] mx-auto mt-24 mb-6 select-none cursor-pointer"
     >
-      {/* GLOW EFFECT */}
+      {/* GLOW EFFECT - فقط اگه ویدیو باشه */}
       {hasVideo && (
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#ea7c69] opacity-20 blur-[60px] rounded-full pointer-events-none" />
       )}
@@ -74,33 +72,18 @@ export default function ProductCard({ product, onClick, onAdd }) {
           )}
 
           <div className="relative w-full h-full drop-shadow-[0_20px_20px_rgba(0,0,0,0.4)]">
-            {hasVideo && isVisible ? (
-              // 🔥 تگ ویدیو هوشمند (بدون mix-blend-mode)
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-contain animate-in fade-in duration-700"
-              >
-                {/* اولویت ۱: آیفون (HEVC) */}
-                {iosUrl && (
-                  <source src={iosUrl} type='video/quicktime; codecs="hvc1"' />
-                )}
-
-                {/* اولویت ۲: کروم/اندروید (WebM) */}
-                {androidUrl && <source src={androidUrl} type="video/webm" />}
-              </video>
-            ) : (
-              <Image
-                src={product.image_url}
-                alt={getTitle(product.title)}
-                fill
-                sizes="176px"
-                className="object-contain transform group-hover:scale-105 transition-transform duration-500"
-                priority={false}
-              />
-            )}
+            {/* استفاده از SmartMedia برای نمایش */}
+            <SmartMedia
+              files={{
+                image_url: product.image_url,
+                animation_url_ios: product.animation_url_ios,
+                animation_url_android: product.animation_url_android,
+              }}
+              alt={getTitle(product.title)}
+              // خود SmartMedia لاجیک نمایش رو داره، ولی ما isVisible رو پاس میدیم تا با اسکرول سینک باشه
+              isVisible={isVisible}
+              className="transform group-hover:scale-105 transition-transform duration-500"
+            />
           </div>
         </div>
 

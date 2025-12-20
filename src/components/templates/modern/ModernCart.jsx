@@ -1,6 +1,6 @@
 "use client";
 
-export default function CartBar({
+export default function ModernCart({
   totalAmount,
   totalCount,
   isLoading,

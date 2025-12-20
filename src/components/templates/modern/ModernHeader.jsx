@@ -9,7 +9,7 @@ const getTitle = (obj) => {
     : obj;
 };
 
-export default function MenuHeader({
+export default function ModernHeader({
   restaurant,
   tableId,
   categories,

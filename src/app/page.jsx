@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#1F1D2B] text-white p-4 font-sans">
-      <h1 className="text-4xl md:text-6xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-[#ea7c69] to-orange-400">
+      <h1 className="text-4xl md:text-6xl font-black mb-2 text-transparent bg-clip-text bg-linear-to-r from-[#ea7c69] to-orange-400">
         Future Menu
       </h1>
       <p className="text-gray-400 mb-12 text-lg">Next Gen QR Menu System</p>

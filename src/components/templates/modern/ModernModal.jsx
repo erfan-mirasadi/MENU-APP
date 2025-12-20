@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import ARViewer from "@/components/ui/ARViewer";
 
 const getTitle = (obj) => {
   if (!obj) return "";
@@ -10,32 +11,7 @@ const getTitle = (obj) => {
     : obj;
 };
 
-export default function ProductModal({ product, onClose, onAddToCart }) {
-  const [isMounted, setIsMounted] = useState(false);
-  const modelViewerRef = useRef(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-
-    // 🔥 FIX CRASH: The Golden Guard
-    // اول چک میکنیم آیا تگ model-viewer توی مرورگر وجود داره یا نه؟
-    const isDefined = customElements.get("model-viewer");
-
-    if (!isDefined) {
-      // فقط اگر وجود نداشت ایمپورتش کن
-      import("@google/model-viewer")
-        .then(() => {
-          console.log("✅ 3D Model Viewer Loaded");
-        })
-        .catch((err) => {
-          // اگر ارور داد که "قبلاً ثبت شده"، نادیده بگیر (چون مشکلی نیست)
-          if (!err.message.includes("already been used")) {
-            console.error("3D Load Error:", err);
-          }
-        });
-    }
-  }, []);
-
+export default function ModernModal({ product, onClose, onAddToCart }) {
   if (!product) return null;
 
   return (
@@ -49,51 +25,31 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
       <div className="bg-[#252836] w-full max-w-md rounded-t-[40px] sm:rounded-[40px] relative z-10 border-t border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500">
         {/* --- Media Section --- */}
         <div className="h-80 relative group bg-[#1a1c25] w-full">
-          {product.model_url && isMounted ? (
-            <div className="w-full h-full">
-              {/* @ts-ignore */}
-              <model-viewer
-                ref={modelViewerRef}
-                src={product.model_url || product.model_lowpoly_url}
-                poster={product.image_url}
-                alt={getTitle(product.title)}
-                // AR & Camera
-                ar
-                ar-modes="webxr scene-viewer quick-look"
-                ar-scale="auto"
-                ar-placement="floor"
-                camera-controls
-                auto-rotate
-                // touch-action="pan-y"
-                // Visuals (Best Settings)
-                shadow-intensity="1"
-                shadow-softness="0.8"
-                tone-mapping="commerce"
-                // Interaction
-                interaction-prompt="auto"
-                interaction-prompt-style="wiggle"
-                style={{ width: "100%", height: "100%", outline: "none" }}
+          {product.model_url || product.model_lowpoly_url ? (
+            <ARViewer
+              modelUrl={product.model_url || product.model_lowpoly_url}
+              posterUrl={product.image_url}
+              alt={getTitle(product.title)}
+            >
+              {/* AR BUTTON (Passed as children) */}
+              <button
+                slot="ar-button"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#ea7c69] hover:bg-[#ff8f7d] text-white h-12 px-6 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-all z-50 cursor-pointer border border-white/20 whitespace-nowrap"
               >
-                {/* AR BUTTON */}
-                <button
-                  slot="ar-button"
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[#ea7c69] hover:bg-[#ff8f7d] text-white h-12 px-6 rounded-full font-bold shadow-2xl flex items-center gap-2 active:scale-95 transition-all z-50 cursor-pointer border border-white/20 whitespace-nowrap"
-                >
-                  <span className="text-xl">📦</span>
-                  <span className="text-sm font-bold tracking-wide">
-                    Show on Table
-                  </span>
-                </button>
+                <span className="text-xl">📦</span>
+                <span className="text-sm font-bold tracking-wide">
+                  Show on Table
+                </span>
+              </button>
 
-                {/* Loading Bar */}
-                <div
-                  slot="progress-bar"
-                  className="absolute top-0 left-0 w-full h-1 bg-white/10"
-                >
-                  <div className="h-full bg-[#ea7c69] origin-left transition-all duration-300 update-bar"></div>
-                </div>
-              </model-viewer>
-            </div>
+              {/* Loading Bar */}
+              <div
+                slot="progress-bar"
+                className="absolute top-0 left-0 w-full h-1 bg-white/10"
+              >
+                <div className="h-full bg-[#ea7c69] origin-left transition-all duration-300 update-bar"></div>
+              </div>
+            </ARViewer>
           ) : (
             // Fallback Image
             <div className="relative w-full h-full">
