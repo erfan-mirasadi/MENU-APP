@@ -1,30 +1,53 @@
-# 🍽️ FutureMenu: Next-Gen SaaS QR Menu
+<div align="center">
 
-**FutureMenu** is a high-tech, multi-tenant digital menu platform built for the modern dining experience. It moves beyond static PDF menus by integrating **3D/AR Food Visualization** and a **Real-time Multiplayer Shared Cart**, allowing guests at the same table to order collaboratively.
+# 🍽️ Next.js 3D Digital Menu
 
-## 🚀 Key Features
+**A high-performance, multi-template digital menu for restaurants featuring AR/3D visualization and real-time ordering.**
 
-- **🏢 SaaS Architecture:** Single codebase serving multiple restaurants via dynamic routing (`/[restaurant-slug]/[table-id]`).
-- **🍔 3D & AR Visualization:** Interactive 3D food models using Google `<model-viewer>` for an immersive experience.
-- **🤝 Real-time Shared Cart:** "Multiplayer" ordering system where guests at the same table see cart updates instantly (powered by Supabase Realtime).
-- **🌍 Multi-Language Support:** JSONB-based i18n database schema supporting unlimited languages per venue.
-- **⚡ Server-Side Performance:** Built on Next.js App Router for optimal SEO and load times.
+  <p>
+    <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" />
+    <img src="https://img.shields.io/badge/Supabase-Realtime-green?style=for-the-badge&logo=supabase" />
+    <img src="https://img.shields.io/badge/Tailwind-CSS-blue?style=for-the-badge&logo=tailwindcss" />
+    <img src="https://img.shields.io/badge/3D-ModelViewer-orange?style=for-the-badge&logo=google" />
+  </p>
 
-## 🛠️ Tech Stack
+[View Demo](#) • [Report Bug](#) • [Request Feature](#)
 
-- **Framework:** Next.js 15 (App Router)
-- **Language:** JavaScript (ES6+)
-- **Styling:** Tailwind CSS + Lucide Icons
-- **Database & Realtime:** Supabase (PostgreSQL)
-- **3D Engine:** Google Model Viewer (`<model-viewer>`)
-- **State Management:** Zustand
+</div>
 
-## 📂 Project Structure
+---
+
+## ✨ Key Features
+
+This project redefines the dining experience with a focus on visual fidelity and performance.
+
+- 🎨 **Multi-Template Architecture:** Seamlessly switch between **Modern** (Dark/Neon) and **Classic** (Luxury/Paper) themes via database config.
+- 📦 **AR & 3D Integration:** Interactive 3D product models with Augmented Reality (AR) support using `@google/model-viewer`.
+- ⚡ **Real-time Cart & Ordering:** Instant order syncing using Supabase Realtime channels (Draft/Pending states).
+- 🎥 **Smart Media Engine:** Intelligent video handling that serves `.mov` (HEVC) to iOS and `.webm` to Android/Web for optimal performance.
+- 📱 **Responsive & Native-Like:** Smooth animations and gesture-based interactions tailored for mobile users.
+
+## 🏗️ Project Structure
+
+Designed for scalability. Templates are isolated, logic is shared.
 
 ```bash
 src/
 ├── app/
-│   └── [slug]/[table_id]/    # Dynamic route for each restaurant & table
-├── components/               # Reusable UI & 3D components
-└── lib/                      # Supabase client & utility functions
+│   └── [slug]/[table_id]/    # Dynamic Routing Entry
+├── components/
+│   ├── ui/                   # Global Shared Components (SmartMedia, ARViewer)
+│   └── templates/
+│       ├── modern/           # 🌑 Modern Theme (Grid Layout, Dark Mode)
+│       └── classic/          # 📜 Classic Theme (Row Layout, Serif Fonts)
+├── hooks/                    # Custom Hooks (useCart, Realtime logic)
+└── lib/                      # Supabase Client & Utils
 ```
+
+🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+Modern Template (Dark),Classic Template (Light)
+"<img src=""https://www.google.com/search?q=https://via.placeholder.com/300x600%3Ftext%3DModern%2BUI"" alt=""Modern UI"" width=""200""/>","<img src=""https://www.google.com/search?q=https://via.placeholder.com/300x600%3Ftext%3DClassic%2BUI"" alt=""Classic UI"" width=""200""/>"
+
+<div align="center"> Built with ❤️ by <b>Erfan</b> </div>
