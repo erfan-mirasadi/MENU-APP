@@ -1,5 +1,5 @@
-import AdminMobileNav from "./_components_/layouts/AdminMobileNav";
-import AdminSidebar from "./_components_/layouts/AdminSidebar";
+import AdminMobileNav from "./_components/layouts/AdminMobileNav";
+import AdminSidebar from "./_components/layouts/AdminSidebar";
 
 export default function AdminLayout({ children }) {
   return (

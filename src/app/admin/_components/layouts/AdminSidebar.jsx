@@ -11,7 +11,6 @@ export default function AdminSidebar() {
 
   return (
     <aside className="hidden md:flex w-28 h-full bg-dark-900 flex-col items-center py-6 z-50 border-r border-dark-800">
-      {/* 1. Logo Area */}
       <div className="mb-10">
         <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center text-accent shadow-lg shadow-accent/10">
           <RiStore2Line size={24} />

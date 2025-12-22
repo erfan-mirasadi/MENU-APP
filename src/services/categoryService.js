@@ -2,11 +2,12 @@
 
 import { supabase } from "@/lib/supabase";
 
-export async function getCategories() {
+export async function getCategories(restaurantId) {
   const { data, error } = await supabase
     .from("categories")
     .select("*")
-    .order("created_at", { ascending: true });
+    .eq("restaurant_id", restaurantId)
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("Error fetching categories:", error);
