@@ -63,7 +63,6 @@ export default function ProductForm({
       animation_url_ios: "",
     };
   });
-  // ----------------------------------------------------
 
   const handleLangChange = (field, value) => {
     setFormData((prev) => ({
@@ -153,26 +152,52 @@ export default function ProductForm({
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
-    setDeleting(true);
-    const deletePromise = supabase
-      .from("products")
-      .delete()
-      .eq("id", initialData.id);
 
-    toast
-      .promise(deletePromise, {
-        loading: "Deleting product...",
-        success: "Product deleted successfully",
-        error: "Failed to delete product",
-      })
-      .then(() => {
+    setDeleting(true);
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", initialData.id);
+
+      if (!deleteError) {
+        toast.success("Product deleted permanently");
         setDeleting(false);
         onClose();
         window.location.reload();
-      })
-      .catch(() => setDeleting(false));
-  };
+        return;
+      }
+      // 3. اگر ارور داشت، بررسی می‌کنیم که آیا به خاطر محدودیت کلید خارجی است یا نه
+      if (deleteError.code === "23503") {
+        const confirmArchive = window.confirm(
+          "This product has order history and cannot be fully deleted. Do you want to archive it instead?"
+        );
 
+        if (confirmArchive) {
+          //  Soft Delete
+          const { error: archiveError } = await supabase
+            .from("products")
+            .update({ is_deleted: true })
+            .eq("id", initialData.id);
+
+          if (!archiveError) {
+            toast.success("Product archived successfully");
+            setDeleting(false);
+            onClose();
+            window.location.reload();
+            return;
+          }
+        }
+      }
+
+      throw deleteError;
+    } catch (err) {
+      console.error("Delete exception:", err);
+      toast.error("Could not delete product.");
+      setDeleting(false);
+    }
+  };
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <CategorySelect

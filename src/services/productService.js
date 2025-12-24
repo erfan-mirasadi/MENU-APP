@@ -7,9 +7,10 @@ export async function getProducts(restaurantId) {
     .from("products")
     .select("*")
     .eq("restaurant_id", restaurantId)
+    .eq('is_deleted', false)
     .order("created_at", { ascending: false });
 
-  if (error) {
+  if (error) {  
     console.error("Error fetching products:", error);
     return [];
   }

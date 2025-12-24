@@ -1,5 +1,3 @@
-// src/services/categoryService.js
-
 import { supabase } from "@/lib/supabase";
 
 export async function getCategories(restaurantId) {
@@ -7,6 +5,7 @@ export async function getCategories(restaurantId) {
     .from("categories")
     .select("*")
     .eq("restaurant_id", restaurantId)
+    .eq("is_deleted", false) // Only fetch active categories
     .order("sort_order", { ascending: true });
 
   if (error) {

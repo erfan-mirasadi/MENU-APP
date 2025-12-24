@@ -67,7 +67,6 @@ export default function CategoryForm({
         restaurant_id: restaurantId,
         title: formData.title,
         image_url: formData.image_url || null,
-        // If it's new, we could calculate sort_order, but for now 0 is fine or input
         sort_order: formData.sort_order,
       };
 
@@ -108,31 +107,59 @@ export default function CategoryForm({
       });
   };
 
+  // --- SMART DELETE HANDLER ---
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Delete this category? All products in it might be affected."
-      )
-    )
+    if (!window.confirm("Are you sure you want to delete this category?"))
       return;
-    setDeleting(true);
-    const deletePromise = supabase
-      .from("categories")
-      .delete()
-      .eq("id", initialData.id);
 
-    toast
-      .promise(deletePromise, {
-        loading: "Deleting category...",
-        success: "Category deleted",
-        error: "Failed to delete",
-      })
-      .then(() => {
+    setDeleting(true);
+
+    try {
+      // 1. Attempt Hard Delete first
+      const { error: deleteError } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", initialData.id);
+
+      // 2. Success (No dependencies found)
+      if (!deleteError) {
+        toast.success("Category deleted permanently");
         setDeleting(false);
         onClose();
         window.location.reload();
-      })
-      .catch(() => setDeleting(false));
+        return;
+      }
+
+      // 3. Foreign Key Constraint Error (Category has products)
+      if (deleteError.code === "23503") {
+        const confirmArchive = window.confirm(
+          "This category contains products and cannot be fully deleted. Do you want to archive it instead?"
+        );
+
+        if (confirmArchive) {
+          // Perform Soft Delete (Archive)
+          const { error: archiveError } = await supabase
+            .from("categories")
+            .update({ is_deleted: true })
+            .eq("id", initialData.id);
+
+          if (!archiveError) {
+            toast.success("Category archived successfully");
+            setDeleting(false);
+            onClose();
+            window.location.reload();
+            return;
+          }
+        }
+      }
+
+      // Throw if it's another type of error
+      throw deleteError;
+    } catch (err) {
+      console.error("Delete exception:", err);
+      toast.error("Could not delete category.");
+      setDeleting(false);
+    }
   };
 
   return (
