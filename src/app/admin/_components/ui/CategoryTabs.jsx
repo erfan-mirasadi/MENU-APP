@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/CategoryTabs.jsx
 "use client";
 import Image from "next/image";
 import { RiAddLine, RiFireFill } from "react-icons/ri";
@@ -13,7 +12,7 @@ export default function CategoryTabs({
   defaultLang = "en",
 }) {
   return (
-    <div className="w-full mb-2">
+    <div className="w-full">
       <div className="flex items-center gap-3 overflow-x-auto pb-6 no-scrollbar pl-4 pr-4 sm:px-0 snap-x snap-mandatory scroll-pl-4">
         {/* 'All' Tab - Styled like the screenshot (Outline) */}
         <button

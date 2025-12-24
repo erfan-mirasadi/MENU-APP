@@ -4,7 +4,7 @@ import CategoryTabs from "./CategoryTabs";
 import ProductCard from "./ProductCard";
 import SlidePanel from "./SlidePanel";
 import ProductForm from "./ProductForm";
-import CategoryForm from "./CategoryForm"; // <--- Import CategoryForm
+import CategoryForm from "./CategoryForm";
 import { RiAddLine } from "react-icons/ri";
 
 export default function ProductsView({
@@ -34,7 +34,6 @@ export default function ProductsView({
       ? supportedLanguages[0]
       : "tr";
 
-  // --- Product Handlers ---
   const handleCreateClick = () => {
     setEditingProduct(null);
     setIsPanelOpen(true);
@@ -50,7 +49,6 @@ export default function ProductsView({
     setTimeout(() => setEditingProduct(null), 300);
   };
 
-  // --- Category Handlers (New) ---
   const handleCategoryCreate = () => {
     setEditingCategory(null);
     setIsCategoryPanelOpen(true);
@@ -69,7 +67,7 @@ export default function ProductsView({
   return (
     <div className="flex flex-col h-full">
       {/* Category Tabs */}
-      <div className="px-4 sm:px-8 mt-6">
+      <div className=" mt-3">
         <CategoryTabs
           categories={categories}
           activeTab={activeTab}

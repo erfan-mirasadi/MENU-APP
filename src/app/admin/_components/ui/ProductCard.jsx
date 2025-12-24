@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import Loader from "./Loader"; // Importing the reusable Loader component
+import Loader from "./Loader";
 import SmartMedia from "@/components/ui/SmartMedia";
 
 export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
@@ -14,9 +14,8 @@ export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
     rawDesc.split(" ").slice(0, 3).join(" ") +
     (rawDesc.split(" ").length > 3 ? "..." : "");
 
-  // Prepare media files
   const mediaFiles = {
-    image_url: product.image_url || "/placeholder-food.png",
+    image_url: product.image_url || null,
     animation_url_ios: product.animation_url_ios || null,
     animation_url_android: product.animation_url_android || null,
   };
@@ -30,7 +29,7 @@ export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
   return (
     <div className="bg-dark-900 rounded-2xl p-6 flex flex-col items-center text-center shadow-lg relative mt-10 border border-gray-800 hover:border-primary/50 transition-colors h-full group">
       {/* Media Display - Cleaner Look (No heavy borders/bg) */}
-      <div className="absolute -top-12 w-32 h-32 rounded-full shadow-2xl shadow-black/50 overflow-hidden z-10 transition-transform group-hover:scale-105 duration-300">
+      <div className="absolute -top-13 w-38 h-38 rounded-full shadow-2xl shadow-black/50 overflow-hidden z-10 transition-transform group-hover:scale-105 duration-300">
         <SmartMedia
           files={mediaFiles}
           alt={title}
@@ -38,25 +37,26 @@ export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
         />
       </div>
 
-      <div className="mt-20 w-full flex flex-col flex-1">
+      <div className="mt-24 w-full flex flex-col flex-1">
         {/* Title */}
-        <h3 className="text-white font-bold text-xl leading-tight mb-2 line-clamp-2 min-h-[3.5rem]">
+        <h3 className="text-white font-bold text-xl leading-tight line-clamp-2 min-h-8">
           {title}
         </h3>
 
         {/* Short Description (3 Words) */}
-        <p className="text-gray-500 text-xs mb-3 min-h-[1.5rem]">{shortDesc}</p>
+        <p className="text-gray-500 text-xs min-h-8">{shortDesc}</p>
 
         {/* Price - Bigger & Bolder */}
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <span className="text-primary font-extrabold text-2xl">
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-primary font-extrabold text-3xl mt-2 -mb-1">
             {product.price} <span className="text-lg">₺</span>
           </span>
 
           {/* Original Price */}
           {product.original_price && (
-            <span className="text-gray-600 line-through text-sm decoration-gray-500">
+            <span className="text-gray-600 line-through text-md decoration-gray-500">
               {product.original_price}
+              <span className="text-xs">₺</span>
             </span>
           )}
         </div>

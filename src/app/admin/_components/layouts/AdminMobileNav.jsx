@@ -19,15 +19,15 @@ export default function AdminMobileNav() {
             key={link.path}
             href={link.path}
             className={`
-              flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all
+              flex flex-col items-center justify-center w-18 h-18 rounded-full transition-all
               ${
                 isActive
-                  ? "bg-accent text-white -translate-y-4 border-4 border-dark-900 shadow-lg shadow-accent/30" 
+                  ? "bg-accent text-white -translate-y-4 border-3 border-dark-900 shadow-lg shadow-accent/30"
                   : "text-text-dim hover:text-white"
               }
             `}
           >
-            <Icon size={20} />
+            <Icon size={28} />
           </Link>
         );
       })}

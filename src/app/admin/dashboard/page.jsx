@@ -45,7 +45,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col h-full bg-dark-900 text-white overflow-hidden">
       {/* Header */}
-      <div className="pt-4 px-4 sm:px-4 flex justify-between items-center bg-dark-900 z-10 pb-2">
+      <div className="pt-2 px-4 sm:px-4 flex justify-between items-center bg-dark-900 z-10 pb-2">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">
             Menu Management
