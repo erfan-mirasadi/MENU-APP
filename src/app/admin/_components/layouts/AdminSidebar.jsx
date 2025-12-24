@@ -2,12 +2,29 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
 import { NAV_LINKS } from "./navLinks";
 import { RiLogoutBoxRLine, RiStore2Line } from "react-icons/ri";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast.success("Logged out successfully");
+      router.push("/admin/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout Error:", error);
+      toast.error("Failed to log out");
+    }
+  };
 
   return (
     <aside className="hidden md:flex w-28 h-full bg-dark-900 flex-col items-center py-6 z-50 border-r border-dark-800">
@@ -43,7 +60,7 @@ export default function AdminSidebar() {
                 }`}
               />
 
-              {/* Tooltip (Optional: وقتی موس میره روش اسمش بیاد بغل) */}
+              {/* Tooltip */}
               <span className="absolute left-16 bg-dark-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                 {link.name}
               </span>
@@ -53,7 +70,10 @@ export default function AdminSidebar() {
       </nav>
 
       {/* 3. Logout Button (Bottom) */}
-      <button className="mt-auto mb-4 text-accent hover:text-white hover:bg-red-500/20 w-12 h-12 rounded-xl flex items-center justify-center transition-colors">
+      <button
+        onClick={handleLogout}
+        className="mt-auto mb-4 text-accent hover:text-white hover:bg-red-500/20 w-12 h-12 rounded-xl flex items-center justify-center transition-colors"
+      >
         <RiLogoutBoxRLine size={24} />
       </button>
     </aside>
