@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/MediaSection.jsx
 import { RiImageLine, RiLock2Line } from "react-icons/ri";
 
 export default function MediaSection({ formData, setFormData, isEditing }) {

@@ -5,39 +5,35 @@ import toast from "react-hot-toast";
 import { RiCheckLine, RiLayoutMasonryLine } from "react-icons/ri";
 import Loader from "@/app/admin/_components/ui/Loader";
 
-// Hardcoded Owner ID (Replace with auth later)
-// const TEST_OWNER_ID = "795d61c8-a279-4716-830c-b5919180a75f";
-
-// Template Definitions (All pointing to your video for now)
 const TEMPLATES = [
   {
     id: "classic",
     name: "Classic Menu",
     description: "Elegant and timeless design.",
-    videoSrc: "/templates/classic.mov", // Your video path
+    videoSrc: "/templates/classic.mov",
   },
   {
     id: "modern",
     name: "Modern Dark",
     description: "Best for night clubs and cafes.",
-    videoSrc: "/templates/modern.mov", // Change later
+    videoSrc: "/templates/modern.mov",
   },
   {
     id: "minimal",
     name: "Minimal Light",
     description: "Clean, bright, and simple.",
-    videoSrc: "/templates/minimal.mov", // Change later
+    videoSrc: "/templates/minimal.mov",
   },
   {
     id: "immersive",
     name: "Immersive Bold",
     description: "Colorful and high energy.",
-    videoSrc: "/templates/immersive.mov", // Change later
+    videoSrc: "/templates/immersive.mov",
   },
 ];
 
 export default function TemplatesPage() {
-  const [activeTemplate, setActiveTemplate] = useState("classic");
+  const [activeTemplate, setActiveTemplate] = useState("modern");
   const [loading, setLoading] = useState(true);
   const [activatingId, setActivatingId] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -53,12 +49,12 @@ export default function TemplatesPage() {
         setUserId(user.id);
         const { data, error } = await supabase
           .from("restaurants")
-          .select("template_id")
+          .select("template_style")
           .eq("owner_id", user.id)
           .single();
 
         if (data) {
-          setActiveTemplate(data.template_id || "classic");
+          setActiveTemplate(data.template_style);
         }
       } catch (error) {
         console.error("Error init templates:", error);
@@ -69,22 +65,20 @@ export default function TemplatesPage() {
     initData();
   }, []);
 
-  // 2. Handle Template Selection
-  const handleSelectTemplate = async (templateId) => {
-    if (templateId === activeTemplate) return;
+  const handleSelectTemplate = async (templateStyle) => {
+    if (templateStyle === activeTemplate) return;
 
-    setActivatingId(templateId);
+    setActivatingId(templateStyle);
 
-    // Update in Supabase
     const { error } = await supabase
       .from("restaurants")
-      .update({ template_style: templateId })
-      .eq("owner_id", TEST_OWNER_ID);
+      .update({ template_style: templateStyle })
+      .eq("owner_id", userId);
 
     if (error) {
       toast.error("Failed to change template.");
     } else {
-      setActiveTemplate(templateId);
+      setActiveTemplate(templateStyle);
       toast.success("Template updated successfully!");
     }
 
@@ -101,7 +95,6 @@ export default function TemplatesPage() {
 
   return (
     <div className="flex flex-col h-full bg-dark-900 text-white p-6 sm:p-8 overflow-y-auto">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <RiLayoutMasonryLine className="text-primary" /> Templates
@@ -158,8 +151,6 @@ export default function TemplatesPage() {
                     {template.description}
                   </p>
                 </div>
-
-                {/* Action Button */}
                 <button
                   onClick={() => handleSelectTemplate(template.id)}
                   disabled={isActive || isProcessing}

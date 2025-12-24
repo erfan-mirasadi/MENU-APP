@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import AdminLayoutClient from "./AdminLayoutClient"; // فایل جدید رو ایمپورت کن
+import AdminLayoutClient from "./AdminLayoutClient";
 
 export default async function AdminLayout({ children }) {
   const supabase = await createSupabaseServerClient();

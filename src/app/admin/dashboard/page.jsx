@@ -1,5 +1,3 @@
-// src/app/admin/dashboard/page.jsx
-
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getCategories } from "@/services/categoryService";
 import { getProducts } from "@/services/productService";
@@ -10,10 +8,7 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // 1. Initialize Server-Side Supabase Client
   const supabase = await createSupabaseServerClient();
-
-  // 2. Get the Logged-in User
   const {
     data: { user },
     error: authError,
@@ -23,8 +18,6 @@ export default async function DashboardPage() {
   if (authError || !user) {
     redirect("/admin/login");
   }
-
-  // 3. Fetch Restaurant for THIS User
   const { data: restaurant, error: restaurantError } = await supabase
     .from("restaurants")
     .select("id, name, supported_languages")
@@ -44,10 +37,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // 4. Fetch Data (Parallel)
-  // Note: Services might still use client-side supabase.
-  // Ideally, services should accept a supabase instance, but for now this works
-  // because fetching products usually relies on public RLS or simpler queries.
   const [categories, products] = await Promise.all([
     getCategories(restaurant.id),
     getProducts(restaurant.id),

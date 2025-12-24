@@ -5,12 +5,9 @@ import SmartMedia from "@/components/ui/SmartMedia";
 
 export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
   const [isLoading, setIsLoading] = useState(false);
-
-  // 1. Language Logic: Prioritize defaultLang, fallback to 'en'
   const title =
     product.title?.[defaultLang] || product.title?.en || "Unnamed Product";
 
-  // 2. Description Logic: Get text -> split to words -> take first 3 -> join back
   const rawDesc =
     product.description?.[defaultLang] || product.description?.en || "";
   const shortDesc =
@@ -27,7 +24,6 @@ export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
   const handleEditClick = () => {
     setIsLoading(true);
     onEdit(product);
-    // Reset loading after a delay (failsafe) or let parent handle unmount
     setTimeout(() => setIsLoading(false), 1000);
   };
 
@@ -70,7 +66,7 @@ export default function ProductCard({ product, onEdit, defaultLang = "en" }) {
       <button
         onClick={handleEditClick}
         disabled={isLoading}
-        className="mt-auto w-full py-2.5 rounded-xl bg-gray-800 text-gray-300 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+        className="mt-auto w-full py-2.5 rounded-xl bg-gray-800 text-gray-300 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-90 disabled:opacity-70 disabled:cursor-not-allowed border border-gray-700"
       >
         {isLoading ? (
           <Loader size="small" className="text-current" />

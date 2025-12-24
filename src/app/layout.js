@@ -47,7 +47,7 @@ export default function RootLayout({ children }) {
             },
             success: {
               iconTheme: {
-                primary: "#EA7C69", // Matches primary orange
+                primary: "#10B981", // Modern emerald green
                 secondary: "#fff",
               },
             },

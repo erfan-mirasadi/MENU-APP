@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/ProductDetails.jsx
 export default function ProductDetails({ activeLang, formData, onLangChange }) {
   return (
     <div className="space-y-4 animate-in fade-in duration-300" key={activeLang}>

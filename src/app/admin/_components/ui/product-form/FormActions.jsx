@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/FormActions.jsx
 import { RiDeleteBin6Line, RiSave3Line } from "react-icons/ri";
 
 export default function FormActions({
@@ -16,7 +15,7 @@ export default function FormActions({
           type="button"
           onClick={onDelete}
           disabled={deleting}
-          className="py-3 px-4 rounded-xl border border-red-500/50 text-red-500 hover:bg-red-500/10 transition font-medium active:scale-95 flex items-center justify-center gap-2"
+          className="py-3 px-4 rounded-xl border border-red-500/50 text-red-500 hover:bg-red-500/10 transition font-medium active:scale-90 flex items-center justify-center gap-2"
         >
           {deleting ? (
             "Deleting..."
@@ -31,7 +30,7 @@ export default function FormActions({
       <button
         type="button"
         onClick={onClose}
-        className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800 transition font-medium active:scale-95"
+        className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-300 hover:bg-gray-800 transition font-medium active:scale-90"
       >
         Cancel
       </button>
@@ -39,13 +38,13 @@ export default function FormActions({
       <button
         type="submit"
         disabled={loading}
-        className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-orange-600 transition font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+        className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-orange-600 transition font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-85 border-2 border-green-900"
       >
         {loading ? (
           "Saving..."
         ) : (
           <>
-            <RiSave3Line size={20} />{" "}
+            <RiSave3Line size={20} className="text-green-100" />{" "}
             {isEditing ? "Update Product" : "Create Product"}
           </>
         )}

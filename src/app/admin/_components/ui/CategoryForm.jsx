@@ -20,8 +20,6 @@ export default function CategoryForm({
   const [activeLang, setActiveLang] = useState(defaultLang);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  // Form State
   const [formData, setFormData] = useState({
     title: {},
     image_url: "",
@@ -72,14 +70,12 @@ export default function CategoryForm({
 
       let error;
       if (initialData) {
-        // UPDATE
         const { error: updateError } = await supabase
           .from("categories")
           .update(payload)
           .eq("id", initialData.id);
         error = updateError;
       } else {
-        // INSERT
         const { error: insertError } = await supabase
           .from("categories")
           .insert([payload]);
@@ -107,7 +103,6 @@ export default function CategoryForm({
       });
   };
 
-  // --- SMART DELETE HANDLER ---
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this category?"))
       return;
@@ -278,7 +273,7 @@ export default function CategoryForm({
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-orange-600 transition font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+          className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-orange-600 transition font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 border-2 border-green-900"
         >
           {loading ? (
             "Saving..."

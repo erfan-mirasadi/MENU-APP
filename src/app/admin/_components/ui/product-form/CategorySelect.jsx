@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/CategorySelect.jsx
 export default function CategorySelect({ categories, value, onChange }) {
   return (
     <div className="space-y-2">

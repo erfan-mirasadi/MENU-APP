@@ -1,4 +1,3 @@
-// src/app/admin/settings/page.jsx
 "use client";
 import GeneralForm from "@/app/admin/_components/settings/GeneralForm";
 import LanguageSettings from "@/app/admin/_components/settings/LanguageSettings";
@@ -14,10 +13,8 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Content Area (Scrollable) */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 pb-20">
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Section 1: General Information */}
           <section>
             <GeneralForm />
           </section>
@@ -25,7 +22,6 @@ export default function SettingsPage() {
           {/* Divider */}
           <div className="border-t border-gray-800" />
 
-          {/* Section 2: Languages */}
           <section>
             <LanguageSettings />
           </section>

@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/PricingSection.jsx
 import { RiMoneyDollarCircleLine, RiPercentLine } from "react-icons/ri";
 
 export default function PricingSection({

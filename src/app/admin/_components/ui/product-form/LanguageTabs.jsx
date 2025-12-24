@@ -1,4 +1,3 @@
-// src/app/admin/_components/ui/product-form/LanguageTabs.jsx
 import { RiTranslate2 } from "react-icons/ri";
 
 export default function LanguageTabs({

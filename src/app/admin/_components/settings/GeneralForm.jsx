@@ -11,10 +11,10 @@ export default function GeneralForm() {
     name: "",
     slug: "",
     wifi_pass: "",
-    instagram: "", // Stored in social_links JSON
-    website: "", // Stored in social_links JSON
-    logo: "", // Read-only for now
-    bg_image: "", // Read-only for now
+    instagram: "",
+    website: "",
+    logo: "",
+    bg_image: "",
   });
 
   useEffect(() => {
@@ -230,7 +230,7 @@ export default function GeneralForm() {
       <div className="pt-4">
         <button
           type="submit"
-          className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-primary/20 active:scale-95"
+          className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-primary/20 active:scale-95 border-2  border-gray-500"
         >
           Save Changes
         </button>

@@ -176,7 +176,7 @@ export default function LanguageSettings() {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition active:scale-95"
+          className="text-white/80 px-6 py-2 rounded-lg font-bold border border-dark-500 transition active:scale-95"
         >
           Save Language Settings
         </button>
