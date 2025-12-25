@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getTableByNumber } from "@/services/tableService";
+import { getActiveSession, createSession } from "@/services/sessionService";
+import {
+  getOrderItems,
+  addOrderItem,
+  updateOrderItemQuantity,
+  removeOrderItem,
+  submitDraftOrders,
+} from "@/services/orderService";
 
 export const useCart = (tableNumberFromUrl) => {
   const [cartItems, setCartItems] = useState([]);
@@ -22,14 +31,10 @@ export const useCart = (tableNumberFromUrl) => {
         setGuestId(storedGuestId);
 
         // Lookup Table Info
-        const { data: tableData, error: tableError } = await supabase
-          .from("tables")
-          .select("id, restaurant_id")
-          .eq("table_number", tableNumberFromUrl) // "T-01"
-          .single();
+        const tableData = await getTableByNumber(tableNumberFromUrl);
 
-        if (tableError || !tableData) {
-          console.error("Table not found!", tableError);
+        if (!tableData) {
+          console.error("Table not found!");
           return;
         }
 
@@ -37,29 +42,10 @@ export const useCart = (tableNumberFromUrl) => {
         const realRestaurantId = tableData.restaurant_id;
 
         // Session Logic
-        let { data: session } = await supabase
-          .from("sessions")
-          .select("id")
-          .eq("table_id", realTableUuid)
-          .eq("status", "ordering") // <--- تغییر مهم: با دیتای تو مچ شد
-          .single();
+        let session = await getActiveSession(realTableUuid);
 
         if (!session) {
-          // اگه نبود، یکی میسازیم با وضعیت 'ordering'
-          const { data: newSession, error: sessionError } = await supabase
-            .from("sessions")
-            .insert([
-              {
-                table_id: realTableUuid,
-                restaurant_id: realRestaurantId,
-                status: "ordering", // <--- تغییر مهم: با دیتای تو مچ شد
-              },
-            ])
-            .select()
-            .single();
-
-          if (sessionError) throw sessionError;
-          session = newSession;
+          session = await createSession(realTableUuid, realRestaurantId);
         }
 
         setSessionId(session?.id);
@@ -92,13 +78,8 @@ export const useCart = (tableNumberFromUrl) => {
   }, [sessionId]);
 
   const fetchCartItems = async () => {
-    const { data } = await supabase
-      .from("order_items")
-      .select(`*, product:products (title, price, image_url)`)
-      .eq("session_id", sessionId)
-      .neq("status", "closed") // آیتم‌های بسته شده رو نیار
-      .order("created_at", { ascending: true });
-    if (data) setCartItems(data);
+    const data = await getOrderItems(sessionId);
+    setCartItems(data);
     setIsLoading(false);
   };
 
@@ -109,35 +90,26 @@ export const useCart = (tableNumberFromUrl) => {
       (item) => item.product_id === product.id && item.status === "draft"
     );
     if (existingItem) {
-      await supabase
-        .from("order_items")
-        .update({ quantity: existingItem.quantity + 1 })
-        .eq("id", existingItem.id);
+      await updateOrderItemQuantity(existingItem.id, existingItem.quantity + 1);
     } else {
-      await supabase.from("order_items").insert([
-        {
-          session_id: sessionId,
-          product_id: product.id,
-          quantity: 1,
-          unit_price_at_order: product.price,
-          added_by_guest_id: guestId,
-          status: "draft",
-        },
-      ]);
+      await addOrderItem({
+        session_id: sessionId,
+        product_id: product.id,
+        quantity: 1,
+        unit_price_at_order: product.price,
+        added_by_guest_id: guestId,
+        status: "draft",
+      });
     }
   };
 
   const removeFromCart = async (itemId) => {
-    await supabase.from("order_items").delete().eq("id", itemId);
+    await removeOrderItem(itemId);
   };
 
   const submitOrder = async () => {
     if (!sessionId) return;
-    await supabase
-      .from("order_items")
-      .update({ status: "pending" })
-      .eq("session_id", sessionId)
-      .eq("status", "draft");
+    await submitDraftOrders(sessionId);
   };
 
   return { cartItems, addToCart, removeFromCart, submitOrder, isLoading };

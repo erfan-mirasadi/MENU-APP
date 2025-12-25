@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import {
+  getRestaurantByOwnerId,
+  updateRestaurant,
+} from "@/services/restaurantService";
 import toast from "react-hot-toast";
 
 export default function GeneralForm() {
@@ -31,21 +35,17 @@ export default function GeneralForm() {
 
         setUserId(user.id);
 
-        const { data, error } = await supabase
-          .from("restaurants")
-          .select("*")
-          .eq("owner_id", user.id)
-          .single();
+        const restaurant = await getRestaurantByOwnerId(user.id);
 
-        if (data) {
+        if (restaurant) {
           setFormData({
-            name: data.name || "",
-            slug: data.slug || "",
-            wifi_pass: data.wifi_pass || "",
-            instagram: data.social_links?.instagram || "",
-            website: data.social_links?.website || "",
-            logo: data.logo || "",
-            bg_image: data.bg_image || "",
+            name: restaurant.name || "",
+            slug: restaurant.slug || "",
+            wifi_pass: restaurant.wifi_pass || "",
+            instagram: restaurant.social_links?.instagram || "",
+            website: restaurant.social_links?.website || "",
+            logo: restaurant.logo || "",
+            bg_image: restaurant.bg_image || "",
           });
         }
       } catch (error) {

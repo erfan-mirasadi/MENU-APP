@@ -1,6 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  archiveCategory,
+} from "@/services/categoryService";
 import toast from "react-hot-toast";
 import {
   RiTranslate2,
@@ -68,22 +74,16 @@ export default function CategoryForm({
         sort_order: formData.sort_order,
       };
 
-      let error;
-      if (initialData) {
-        const { error: updateError } = await supabase
-          .from("categories")
-          .update(payload)
-          .eq("id", initialData.id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("categories")
-          .insert([payload]);
-        error = insertError;
+      try {
+        if (initialData) {
+          await updateCategory(initialData.id, payload);
+        } else {
+          await createCategory(payload);
+        }
+        resolve();
+      } catch (error) {
+        reject(error);
       }
-
-      if (error) reject(error);
-      else resolve();
     });
 
     toast
@@ -111,20 +111,14 @@ export default function CategoryForm({
 
     try {
       // 1. Attempt Hard Delete first
-      const { error: deleteError } = await supabase
-        .from("categories")
-        .delete()
-        .eq("id", initialData.id);
+      await deleteCategory(initialData.id);
 
       // 2. Success (No dependencies found)
-      if (!deleteError) {
-        toast.success("Category deleted permanently");
-        setDeleting(false);
-        onClose();
-        window.location.reload();
-        return;
-      }
-
+      toast.success("Category deleted permanently");
+      setDeleting(false);
+      onClose();
+      window.location.reload();
+    } catch (deleteError) {
       // 3. Foreign Key Constraint Error (Category has products)
       if (deleteError.code === "23503") {
         const confirmArchive = window.confirm(
@@ -132,28 +126,25 @@ export default function CategoryForm({
         );
 
         if (confirmArchive) {
-          // Perform Soft Delete (Archive)
-          const { error: archiveError } = await supabase
-            .from("categories")
-            .update({ is_deleted: true })
-            .eq("id", initialData.id);
-
-          if (!archiveError) {
+          try {
+            await archiveCategory(initialData.id);
             toast.success("Category archived successfully");
             setDeleting(false);
             onClose();
             window.location.reload();
-            return;
+          } catch (archiveError) {
+            console.error("Archive exception:", archiveError);
+            toast.error("Could not archive category.");
+            setDeleting(false);
           }
+        } else {
+          setDeleting(false);
         }
+      } else {
+        console.error("Delete exception:", deleteError);
+        toast.error("Could not delete category.");
+        setDeleting(false);
       }
-
-      // Throw if it's another type of error
-      throw deleteError;
-    } catch (err) {
-      console.error("Delete exception:", err);
-      toast.error("Could not delete category.");
-      setDeleting(false);
     }
   };
 

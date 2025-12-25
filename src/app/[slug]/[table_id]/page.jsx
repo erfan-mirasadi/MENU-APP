@@ -1,56 +1,46 @@
 import { notFound } from "next/navigation";
-import ClientWrapper from "./ClientWrapper.jsx"; // مطمئن شو مسیر درسته
-import { supabase } from "@/lib/supabase.js";
+import ClientWrapper from "./ClientWrapper.jsx";
+import { getCategories } from "@/services/categoryService";
+import { getProducts } from "@/services/productService";
+import { getRestaurantBySlug } from "@/services/restaurantService";
 
 // این فانکشن رو کش (Cache) نمیکنیم تا تغییرات دیتابیس رو سریع ببینی
 export const dynamic = "force-dynamic";
 
-async function getMenuData(slug, tableId) {
-  // 1. Fetch Restaurant
-  const { data: restaurant, error: rError } = await supabase
-    .from("restaurants")
-    .select("*") // این * باعث میشه template_style هم گرفته بشه
-    .eq("slug", slug)
-    .single();
+async function getMenuData(slug) {
+  const restaurant = await getRestaurantBySlug(slug);
 
-  if (rError || !restaurant) {
-    console.error("❌ Restaurant Error:", rError);
+  if (!restaurant) {
     return { error: "Restaurant not found" };
   }
 
-  // 2. Fetch Categories & Products
-  const { data: categories, error: cError } = await supabase
-    .from("categories")
-    .select(`*, products(*)`)
-    .eq("restaurant_id", restaurant.id)
-    .order("sort_order", { ascending: true });
+  const [categories, allProducts] = await Promise.all([
+    getCategories(restaurant.id),
+    getProducts(restaurant.id),
+  ]);
 
-  if (cError) console.error("❌ Categories Error:", cError);
+  const categoriesWithProducts = categories.map((category) => ({
+    ...category,
+    products: allProducts.filter(
+      (product) => product.category_id === category.id
+    ),
+  }));
 
-  // 3. Fetch Featured Products (Suggestions)
-  const { data: featuredProducts, error: fError } = await supabase
-    .from("products")
-    .select("*")
-    .eq("restaurant_id", restaurant.id)
-    .limit(5); // فعلا ۵ تا اول رو میگیریم
+  const featuredProducts = allProducts.slice(0, 5);
 
   return {
     restaurant,
-    categories: categories || [],
-    featuredProducts: featuredProducts || [],
+    categories: categoriesWithProducts,
+    featuredProducts,
   };
 }
 
 export default async function Page({ params }) {
-  // Next.js 15: params باید await بشه
   const resolvedParams = await params;
   const { slug, table_id } = resolvedParams;
 
   const decodedSlug = decodeURIComponent(slug);
   const decodedTableId = decodeURIComponent(table_id);
-
-  console.log(`🚀 Loading Menu: ${decodedSlug} (Table: ${decodedTableId})`);
-
   const data = await getMenuData(decodedSlug, decodedTableId);
 
   if (data.error) {

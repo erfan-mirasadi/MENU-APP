@@ -5,7 +5,7 @@ import ModernCard from "./ModernCard";
 import ModernHeader from "./ModernHeader";
 import ModernCart from "./ModernCart";
 import ModernModal from "./ModernModal";
-import ModernCartDrawer from "./ModernCartDrawer"; // <--- 1. Import Added
+import ModernCartDrawer from "./ModernCartDrawer";
 import { useCart } from "@/app/hooks/useCart";
 
 export default function ModernMenu({ restaurant, categories, tableId }) {

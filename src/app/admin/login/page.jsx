@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getRestaurantByOwnerId } from "@/services/restaurantService";
 import toast from "react-hot-toast";
 import {
   RiRestaurant2Fill,
@@ -35,11 +36,7 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       // 2. حالا سریع چک کن ببین رستوران داره یا نه؟
-      const { data: restaurant } = await supabase
-        .from("restaurants")
-        .select("id") // فقط آیدی رو بگیر که سبک باشه
-        .eq("owner_id", user.id)
-        .maybeSingle();
+      const restaurant = await getRestaurantByOwnerId(user.id);
 
       toast.success("Welcome back!");
 

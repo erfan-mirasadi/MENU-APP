@@ -1,6 +1,12 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  archiveProduct,
+} from "@/services/productService";
 import toast from "react-hot-toast";
 
 import CategorySelect from "./product-form/CategorySelect";
@@ -114,22 +120,16 @@ export default function ProductForm({
         animation_url_ios: formData.animation_url_ios || null,
       };
 
-      let error;
-      if (initialData) {
-        const { error: updateError } = await supabase
-          .from("products")
-          .update(payload)
-          .eq("id", initialData.id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("products")
-          .insert([payload]);
-        error = insertError;
+      try {
+        if (initialData) {
+          await updateProduct(initialData.id, payload);
+        } else {
+          await createProduct(payload);
+        }
+        resolve();
+      } catch (error) {
+        reject(error);
       }
-
-      if (error) reject(error);
-      else resolve();
     });
 
     toast
@@ -156,18 +156,13 @@ export default function ProductForm({
     setDeleting(true);
 
     try {
-      const { error: deleteError } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", initialData.id);
+      await deleteProduct(initialData.id);
 
-      if (!deleteError) {
-        toast.success("Product deleted permanently");
-        setDeleting(false);
-        onClose();
-        window.location.reload();
-        return;
-      }
+      toast.success("Product deleted permanently");
+      setDeleting(false);
+      onClose();
+      window.location.reload();
+    } catch (deleteError) {
       // 3. اگر ارور داشت، بررسی می‌کنیم که آیا به خاطر محدودیت کلید خارجی است یا نه
       if (deleteError.code === "23503") {
         const confirmArchive = window.confirm(
@@ -175,27 +170,25 @@ export default function ProductForm({
         );
 
         if (confirmArchive) {
-          //  Soft Delete
-          const { error: archiveError } = await supabase
-            .from("products")
-            .update({ is_deleted: true })
-            .eq("id", initialData.id);
-
-          if (!archiveError) {
+          try {
+            await archiveProduct(initialData.id);
             toast.success("Product archived successfully");
             setDeleting(false);
             onClose();
             window.location.reload();
-            return;
+          } catch (archiveError) {
+            console.error("Archive exception:", archiveError);
+            toast.error("Could not archive product.");
+            setDeleting(false);
           }
+        } else {
+          setDeleting(false);
         }
+      } else {
+        console.error("Delete exception:", deleteError);
+        toast.error("Could not delete product.");
+        setDeleting(false);
       }
-
-      throw deleteError;
-    } catch (err) {
-      console.error("Delete exception:", err);
-      toast.error("Could not delete product.");
-      setDeleting(false);
     }
   };
   return (

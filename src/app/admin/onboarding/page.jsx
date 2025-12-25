@@ -2,6 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+  getRestaurantByOwnerId,
+  createRestaurant,
+} from "@/services/restaurantService";
 import toast from "react-hot-toast";
 import { RiRocketLine, RiStore2Line } from "react-icons/ri";
 
@@ -22,13 +26,9 @@ export default function OnboardingPage() {
         } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: restaurants } = await supabase
-          .from("restaurants")
-          .select("id")
-          .eq("owner_id", user.id)
-          .limit(1);
+        const restaurant = await getRestaurantByOwnerId(user.id);
 
-        if (restaurants && restaurants.length > 0) {
+        if (restaurant) {
           router.push("/admin/dashboard");
         }
       } catch (error) {
@@ -62,22 +62,22 @@ export default function OnboardingPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      const { error } = await supabase.from("restaurants").insert({
-        name: formData.name,
-        slug: formData.slug,
-        owner_id: user.id,
-        is_active: true,
-        supported_languages: ["tr"],
-        default_language: "tr",
-      });
-
-      if (error) {
-        if (error.code === "23505") {
+      try {
+        await createRestaurant({
+          name: formData.name,
+          slug: formData.slug,
+          owner_id: user.id,
+          is_active: true,
+          supported_languages: ["tr"],
+          default_language: "tr",
+        });
+      } catch (createError) {
+        if (createError.code === "23505") {
           throw new Error(
             "This URL slug is already taken. Please choose another."
           );
         }
-        throw error;
+        throw createError;
       }
 
       toast.success("Restaurant created! 🚀");

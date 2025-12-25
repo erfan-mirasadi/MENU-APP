@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { getRestaurantByOwnerId } from "@/services/restaurantService";
 import AdminLayoutClient from "./AdminLayoutClient";
 
 export default async function AdminLayout({ children }) {
@@ -9,12 +10,7 @@ export default async function AdminLayout({ children }) {
 
   let restaurant = null;
   if (user) {
-    const { data } = await supabase
-      .from("restaurants")
-      .select("name, image_url")
-      .eq("owner_id", user.id)
-      .single();
-    restaurant = data;
+    restaurant = await getRestaurantByOwnerId(user.id);
   }
 
   return (

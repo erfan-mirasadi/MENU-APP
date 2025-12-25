@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase"; // کلاینت سمت کاربر
+import {
+  getRestaurantByOwnerId,
+  updateRestaurant,
+} from "@/services/restaurantService";
 import { RiCheckLine, RiGlobalLine } from "react-icons/ri";
 import toast from "react-hot-toast";
 
@@ -35,15 +39,11 @@ export default function LanguageSettings() {
 
         setUserId(user.id);
 
-        const { data, error } = await supabase
-          .from("restaurants")
-          .select("supported_languages, default_language")
-          .eq("owner_id", user.id)
-          .single();
+        const restaurant = await getRestaurantByOwnerId(user.id);
 
-        if (data) {
-          setSelectedLangs(data.supported_languages || ["tr"]);
-          setDefaultLang(data.default_language || "tr");
+        if (restaurant) {
+          setSelectedLangs(restaurant.supported_languages || ["tr"]);
+          setDefaultLang(restaurant.default_language || "tr");
         }
       } catch (error) {
         console.error("Error loading languages:", error);
@@ -77,16 +77,15 @@ export default function LanguageSettings() {
     }
 
     const savePromise = new Promise(async (resolve, reject) => {
-      const { error } = await supabase
-        .from("restaurants")
-        .update({
+      try {
+        await updateRestaurant(userId, {
           supported_languages: selectedLangs,
           default_language: defaultLang,
-        })
-        .eq("owner_id", userId);
-
-      if (error) reject(error);
-      else resolve();
+        });
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     });
 
     toast.promise(savePromise, {

@@ -1,6 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  getRestaurantByOwnerId,
+  updateRestaurant,
+} from "@/services/restaurantService";
 import toast from "react-hot-toast";
 import { RiCheckLine, RiLayoutMasonryLine } from "react-icons/ri";
 import Loader from "@/app/admin/_components/ui/Loader";
@@ -47,14 +51,10 @@ export default function TemplatesPage() {
         if (!user) return;
 
         setUserId(user.id);
-        const { data, error } = await supabase
-          .from("restaurants")
-          .select("template_style")
-          .eq("owner_id", user.id)
-          .single();
+        const restaurant = await getRestaurantByOwnerId(user.id);
 
-        if (data) {
-          setActiveTemplate(data.template_style);
+        if (restaurant) {
+          setActiveTemplate(restaurant.template_style);
         }
       } catch (error) {
         console.error("Error init templates:", error);
@@ -70,16 +70,12 @@ export default function TemplatesPage() {
 
     setActivatingId(templateStyle);
 
-    const { error } = await supabase
-      .from("restaurants")
-      .update({ template_style: templateStyle })
-      .eq("owner_id", userId);
-
-    if (error) {
-      toast.error("Failed to change template.");
-    } else {
+    try {
+      await updateRestaurant(userId, { template_style: templateStyle });
       setActiveTemplate(templateStyle);
       toast.success("Template updated successfully!");
+    } catch (error) {
+      toast.error("Failed to change template.");
     }
 
     setActivatingId(null);
