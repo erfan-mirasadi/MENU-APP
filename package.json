@@ -21,6 +21,9 @@
     "react-icons": "^5.5.0",
     "three": "^0.182.0"
   },
+  "overrides": {
+    "three": "$three"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
