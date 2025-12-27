@@ -4,6 +4,7 @@ import ClassicLayout from "@/components/templates/classic/ClassicLayout";
 import ImmersiveLayout from "@/components/templates/immersive/ImmersiveLayout";
 import MinimalLayout from "@/components/templates/minimal/MinimalLayout";
 import ModernLayout from "@/components/templates/modern/ModernLayout";
+import ThreeDLayout from "@/components/templates/three-d/ThreeDLayout";
 
 export default function ClientWrapper({
   restaurant,
@@ -46,6 +47,16 @@ export default function ClientWrapper({
   if (style === "immersive") {
     return (
       <ImmersiveLayout
+        restaurant={restaurant}
+        categories={categories}
+        tableId={tableId}
+        featuredProducts={featuredProducts}
+      />
+    );
+  }
+  if (style === "three-d") {
+    return (
+      <ThreeDLayout
         restaurant={restaurant}
         categories={categories}
         tableId={tableId}
