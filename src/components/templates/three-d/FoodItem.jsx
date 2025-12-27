@@ -93,8 +93,8 @@ export default function FoodItem({
 
       // چرخش خودکار نرم وقتی کاربر دست نمیزنه
       if (modelRef.current) {
-        modelRef.current.rotation.y += delta * 0.2;
-        modelRef.current.rotation.x += delta * 0.15;
+        modelRef.current.rotation.y += delta * 0.1;
+        modelRef.current.rotation.x += delta * 0.075;
       }
     }
   });
@@ -114,10 +114,10 @@ export default function FoodItem({
           azimuth={[-Math.PI, Math.PI]}
         >
           <Float
-            speed={2}
-            rotationIntensity={0.2}
-            floatIntensity={0.5}
-            floatingRange={[-0.2, 0.2]}
+            speed={1}
+            rotationIntensity={0.1}
+            floatIntensity={0.25}
+            floatingRange={[-0.1, 0.1]}
           >
             <group ref={modelRef}>
               {product.model_url ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
 
@@ -31,48 +31,60 @@ export default function ThreeDLayout({ restaurant, categories }) {
   }, [activeCatId]);
 
   // Touch handlers
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     const touch = e.touches[0];
     touchStartRef.current = {
       x: touch.clientX,
       y: touch.clientY,
       time: Date.now(),
     };
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-    // PresentationControls handles rotation
-  };
+  const handleTouchEnd = useCallback(
+    (e) => {
+      if (!touchStartRef.current) return;
 
-  const handleTouchEnd = (e) => {
-    if (!touchStartRef.current) return;
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+      const deltaTime = Date.now() - touchStartRef.current.time;
 
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-    const deltaTime = Date.now() - touchStartRef.current.time;
+      // ساده: swipe سریع و غالباً افقی
+      const isSwipe =
+        Math.abs(deltaX) > 60 &&
+        Math.abs(deltaX) > Math.abs(deltaY) * 1.5 &&
+        deltaTime < 500;
 
-    // ساده: swipe سریع و غالباً افقی
-    const isSwipe =
-      Math.abs(deltaX) > 60 &&
-      Math.abs(deltaX) > Math.abs(deltaY) * 1.5 &&
-      deltaTime < 500;
-
-    if (isSwipe) {
-      if (deltaX > 0 && activeIndex > 0) {
-        setActiveIndex(activeIndex - 1);
-      } else if (deltaX < 0 && activeIndex < activeProducts.length - 1) {
-        setActiveIndex(activeIndex + 1);
+      if (isSwipe) {
+        if (deltaX > 0 && activeIndex > 0) {
+          setActiveIndex(activeIndex - 1);
+        } else if (deltaX < 0 && activeIndex < activeProducts.length - 1) {
+          setActiveIndex(activeIndex + 1);
+        }
       }
-    }
-  };
+    },
+    [activeIndex, activeProducts.length]
+  );
+
+  // استفاده از useEffect برای preventDefault با passive: false
+  useEffect(() => {
+    const element = document.querySelector(".three-d-container");
+    if (!element) return;
+
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+    };
+
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    return () => {
+      element.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, []);
 
   return (
     <div
-      className="relative w-full h-[100dvh] bg-black overflow-hidden select-none font-sans touch-none"
+      className="three-d-container relative w-full h-[100dvh] bg-black overflow-hidden select-none font-sans touch-none"
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* لایه سه بعدی */}
