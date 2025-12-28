@@ -26,7 +26,6 @@ export default function Scene({
   activeIndex,
   categoryMounted,
 }) {
-  // غیرفعال کردن اسکرول عمودی صفحه
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -38,17 +37,18 @@ export default function Scene({
     <div className="absolute inset-0 z-0">
       <Canvas
         shadows={false}
-        dpr={[1, 1.5]} // قفل کردن کیفیت برای موبایل
+        dpr={[1, 1.5]} // کیفیت رو محدود نگه دار برای پرفورمنس
         camera={{ position: [0, 0, 12], fov: 35 }}
         gl={{
-          antialias: false,
-          toneMapping: 4, // ACESFilmic
+          antialias: false, // آنتی‌الیاس خاموش (خیلی تاثیر داره تو سرعت موبایل)
+          toneMapping: 4,
           powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: true,
         }}
-        performance={{ min: 0.5 }} // کاهش کیفیت اگر فریم پایین اومد
       >
         <color attach="background" args={["#000000"]} />
-        <Environment preset="city" blur={0.8} />
+        {/* Environment سنگینه، رزولوشن رو کم کردم */}
+        <Environment preset="city" blur={0.8} resolution={256} />
         <ambientLight intensity={0.6} />
         <spotLight
           position={[10, 10, 10]}
@@ -58,8 +58,9 @@ export default function Scene({
           color="#fff"
         />
 
-        <Sparkles count={50} scale={30} size={4} speed={0.3} opacity={0.2} />
+        <Sparkles count={30} scale={20} size={4} speed={0.3} opacity={0.2} />
 
+        {/* Suspense باعث میشه تا وقتی مدل لود نشده، یه چیز دیگه (یا هیچی) نشون بده */}
         <Suspense fallback={null}>
           {activeProducts.length > 0 && (
             <LinearCarousel
@@ -72,11 +73,11 @@ export default function Scene({
           <ContactShadows
             position={[0, -4, 0]}
             opacity={0.4}
-            scale={30}
-            blur={1.5}
-            far={8}
+            scale={20}
+            blur={2}
+            far={4} // سایه رو محدودتر کردم
+            resolution={128} // رزولوشن سایه رو نصف کردم (خیلی سبکتره)
             color="#000000"
-            resolution={256} // کم کردن رزولوشن برای موبایل
           />
         </Suspense>
       </Canvas>

@@ -3,34 +3,55 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
+import { useGLTF } from "@react-three/drei";
 
 export default function ThreeDLayout({ restaurant, categories }) {
-  console.log("🎨 3D Rendering...");
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
   const [categoryMounted, setCategoryMounted] = useState(false);
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
-  // فیلتر کردن محصولات بر اساس دسته‌بندی
   const activeProducts = useMemo(() => {
     return categories.find((c) => c.id === activeCatId)?.products || [];
   }, [activeCatId, categories]);
 
-  // محصولی که الان فوکوس روشه
   const focusedProduct = activeProducts[activeIndex] || activeProducts[0];
 
   useEffect(() => {
     setCategoryMounted(false);
     setActiveIndex(0);
-
-    const timer = setTimeout(() => {
-      setCategoryMounted(true);
-    }, 100);
+    const timer = setTimeout(() => setCategoryMounted(true), 100);
     return () => clearTimeout(timer);
   }, [activeCatId]);
 
-  // Touch handlers
+  // --- 🔥 SMART PRELOAD SYSTEM ---
+  useEffect(() => {
+    if (!activeProducts.length) return;
+
+    // همیشه آیتم بعدی (Next) و قبلی (Prev) رو پیش‌دانلود کن
+    // این باعث میشه وقتی کاربر سوایپ میکنه، مدل آماده باشه
+    const nextIndex = activeIndex + 1;
+    const prevIndex = activeIndex - 1;
+
+    if (nextIndex < activeProducts.length) {
+      const url = activeProducts[nextIndex].model_url;
+      if (url) {
+        console.log(`🔄 Preloading Next: [${nextIndex}]`);
+        useGLTF.preload(url);
+      }
+    }
+
+    if (prevIndex >= 0) {
+      const url = activeProducts[prevIndex].model_url;
+      if (url) {
+        // useGLTF خودش کش رو مدیریت میکنه، اگه باشه دوباره دانلود نمیکنه
+        useGLTF.preload(url);
+      }
+    }
+  }, [activeIndex, activeProducts]);
+
+  // Touch Logic (بدون تغییر، چون خوب بود)
   const handleTouchStart = useCallback((e) => {
     const touch = e.touches[0];
     touchStartRef.current = {
@@ -43,42 +64,33 @@ export default function ThreeDLayout({ restaurant, categories }) {
   const handleTouchEnd = useCallback(
     (e) => {
       if (!touchStartRef.current) return;
-
       const touch = e.changedTouches[0];
       const deltaX = touch.clientX - touchStartRef.current.x;
       const deltaY = touch.clientY - touchStartRef.current.y;
       const deltaTime = Date.now() - touchStartRef.current.time;
 
-      // ساده: swipe سریع و غالباً افقی
       const isSwipe =
-        Math.abs(deltaX) > 60 &&
+        Math.abs(deltaX) > 50 && // حساسیت رو کمی بیشتر کردم
         Math.abs(deltaX) > Math.abs(deltaY) * 1.5 &&
         deltaTime < 500;
 
       if (isSwipe) {
         if (deltaX > 0 && activeIndex > 0) {
-          setActiveIndex(activeIndex - 1);
+          setActiveIndex((prev) => prev - 1);
         } else if (deltaX < 0 && activeIndex < activeProducts.length - 1) {
-          setActiveIndex(activeIndex + 1);
+          setActiveIndex((prev) => prev + 1);
         }
       }
     },
     [activeIndex, activeProducts.length]
   );
 
-  // استفاده از useEffect برای preventDefault با passive: false
   useEffect(() => {
     const element = document.querySelector(".three-d-container");
     if (!element) return;
-
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-    };
-
+    const handleTouchMove = (e) => e.preventDefault();
     element.addEventListener("touchmove", handleTouchMove, { passive: false });
-    return () => {
-      element.removeEventListener("touchmove", handleTouchMove);
-    };
+    return () => element.removeEventListener("touchmove", handleTouchMove);
   }, []);
 
   return (
@@ -87,14 +99,12 @@ export default function ThreeDLayout({ restaurant, categories }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* لایه سه بعدی */}
       <Scene
         activeProducts={activeProducts}
         activeIndex={activeIndex}
         categoryMounted={categoryMounted}
       />
 
-      {/* لایه رابط کاربری */}
       <UIOverlay
         restaurant={restaurant}
         categories={categories}
