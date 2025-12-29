@@ -13,6 +13,7 @@ const RENDER_WINDOW = 2;
 const ITEM_SCALE_ACTIVE = 10;
 const ITEM_SCALE_SIDE = 6;
 // How much the object tilts when phone moves (lower = less sensitivity)
+// --- تنظیمات سنسور رو دقیقاً همون که خواستی گذاشتم ---
 const GYRO_INTENSITY = 40;
 
 // --- 1. Real Model Component ---
@@ -73,26 +74,46 @@ export default function FoodItem({
   const shouldLoadModel = absOffset <= VISIBLE_RANGE;
   const isVisible = absOffset <= RENDER_WINDOW;
 
-  // --- NEW: Lightweight Gyroscope Listener ---
+  // --- NEW: Universal Gyroscope Listener (Android + iOS Fix) ---
   useEffect(() => {
-    // Function to handle device orientation
     const handleOrientation = (event) => {
-      // beta: front/back tilt [-180, 180]
-      // gamma: left/right tilt [-90, 90]
       const x = (event.beta || 0) / GYRO_INTENSITY;
       const y = (event.gamma || 0) / GYRO_INTENSITY;
-
       gyro.current = { x, y };
     };
 
-    // Check if window is defined (SSR safety)
+    // 1. Try to add listener immediately (Works for Android)
     if (typeof window !== "undefined" && window.DeviceOrientationEvent) {
       window.addEventListener("deviceorientation", handleOrientation);
+    }
+
+    // 2. iOS FIX: Add a one-time click listener to request permission hiddenly
+    // آیفون نیاز به "اجازه با کلیک" داره. این کد میگه اولین باری که کاربر
+    // هر جای صفحه کلیک کرد، دسترسی سنسور رو بگیر.
+    const enableIOS = async () => {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation);
+          }
+        } catch (error) {
+          // console.log(error);
+        }
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("click", enableIOS, { once: true });
     }
 
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("deviceorientation", handleOrientation);
+        window.removeEventListener("click", enableIOS);
       }
     };
   }, []);
@@ -100,19 +121,22 @@ export default function FoodItem({
   useFrame((state, delta) => {
     if (!group.current) return;
 
-    // --- A. Position Movement ---
+    // --- A. Position Movement (Flight Animation) ---
     const targetX = offset * X_SPACING;
     const targetZ = -Math.abs(offset) * 3;
     const targetY = categoryMounted ? -1 : -12;
+
+    // --- FIX: Slower Entry Animation ---
+    // عدد سوم (0.8) رو زیاد کردم که پروازش آروم‌تر و قابل دیدن باشه
+    // قبلا 0.3 بود که خیلی سریع بود
     easing.damp3(
       group.current.position,
       [targetX, targetY, targetZ],
-      0.3,
+      0.8,
       delta
     );
 
     // --- B. Rotation & Scale Management ---
-    // Get current gyro values
     const gyroX = gyro.current.x;
     const gyroY = gyro.current.y;
 
@@ -124,14 +148,8 @@ export default function FoodItem({
         THREE.MathUtils.lerp(currentScale, targetScale, delta * 5)
       );
 
-      // Rotation logic + Gyro effect
-      // Added gyroX and gyroY to the target rotation
-      easing.dampE(
-        group.current.rotation,
-        [gyroX, gyroY, 0], // Tilt based on phone movement
-        0.4,
-        delta
-      );
+      // Rotation logic + Gyro
+      easing.dampE(group.current.rotation, [gyroX, gyroY, 0], 0.4, delta);
     } else {
       // Inactive logic
       const targetScale = ITEM_SCALE_SIDE;
@@ -140,10 +158,10 @@ export default function FoodItem({
         THREE.MathUtils.lerp(currentScale, targetScale, delta * 5)
       );
 
-      // Rotation logic + Gyro effect (mixing with offset rotation)
+      // Rotation logic + Gyro
       easing.dampE(
         group.current.rotation,
-        [gyroX, offset * -0.2 + gyroY, 0], // Combine offset tilt + phone tilt
+        [gyroX, offset * -0.2 + gyroY, 0],
         0.4,
         delta
       );
