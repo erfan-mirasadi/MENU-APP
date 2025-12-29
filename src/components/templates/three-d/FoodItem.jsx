@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useState, useEffect, Suspense } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF, PresentationControls, Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,13 +12,42 @@ const VISIBLE_RANGE = 1;
 const RENDER_WINDOW = 2;
 const ITEM_SCALE_ACTIVE = 10;
 const ITEM_SCALE_SIDE = 6;
-const GYRO_INTENSITY = 40;
 
-// --- 1. Real Model Component ---
-function RealModel({ url }) {
-  if (!url) return null;
+// --- GLOBAL CACHE TRACKER ---
+// این متغیر بیرون از کامپوننت تعریف میشه تا با رفرش شدن کامپوننت‌ها پاک نشه.
+// هر لینکی که اینجا باشه یعنی قبلاً دانلود شده.
+const loadedUrls = new Set();
 
+// --- COMPONENT: REAL MODEL ---
+function RealModel({ url, productTitle, onLoad }) {
   const { scene } = useGLTF(url);
+
+  // Ref to ensure log runs only once per mount
+  const hasLogged = useRef(false);
+
+  useEffect(() => {
+    if (!hasLogged.current) {
+      hasLogged.current = true;
+
+      // CHECK CACHE STATUS REALISTICALLY
+      const isCached = loadedUrls.has(url);
+
+      if (isCached) {
+        console.log(
+          `%c ⚡ FROM CACHE: ${productTitle}`,
+          "color: #00ffff; font-weight: bold;"
+        );
+      } else {
+        console.log(
+          `%c 📥 DOWNLOADING: ${productTitle}`,
+          "color: #ff00ff; font-weight: bold;"
+        );
+        loadedUrls.add(url); // Add to cache list
+      }
+
+      if (onLoad) onLoad();
+    }
+  }, [url, onLoad, productTitle]);
 
   const clone = useMemo(() => {
     const c = scene.clone();
@@ -27,8 +56,8 @@ function RealModel({ url }) {
         obj.castShadow = false;
         obj.receiveShadow = false;
         if (obj.material) {
-          obj.material.envMapIntensity = 1.2;
-          obj.material.roughness = 0.4;
+          obj.material.envMapIntensity = 1.0;
+          obj.material.roughness = 0.5;
           obj.material.needsUpdate = true;
         }
       }
@@ -39,133 +68,66 @@ function RealModel({ url }) {
   return <primitive object={clone} />;
 }
 
-// --- 2. Placeholder Mesh ---
+// --- COMPONENT: PLACEHOLDER ---
 function PlaceholderMesh() {
   return (
     <mesh>
-      <sphereGeometry args={[0.3, 16, 16]} />
-      <meshStandardMaterial color="#333" wireframe opacity={0.2} transparent />
+      <sphereGeometry args={[0.1, 8, 8]} />
+      <meshBasicMaterial color="#444" wireframe opacity={0.2} transparent />
     </mesh>
   );
 }
 
-// --- 3. Main Component ---
-export default function FoodItem({
-  product,
-  index,
-  activeIndex,
-  categoryMounted,
-}) {
+// --- MAIN COMPONENT ---
+export default function FoodItem({ product, index, activeIndex, gyroData }) {
   const group = useRef();
   const modelRef = useRef();
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Reference to store gyroscope data
-  const gyro = useRef({ x: 0, y: 0 });
-
-  // Guard Clause
   if (!product) return null;
 
   const isActive = index === activeIndex;
   const offset = index - activeIndex;
   const absOffset = Math.abs(offset);
-
   const shouldLoadModel = absOffset <= VISIBLE_RANGE;
   const isVisible = absOffset <= RENDER_WINDOW;
-
-  // --- GYROSCOPE LOGIC (Ultimate iOS Fix) ---
-  useEffect(() => {
-    const handleOrientation = (event) => {
-      const x = (event.beta || 0) / GYRO_INTENSITY;
-      const y = (event.gamma || 0) / GYRO_INTENSITY;
-      gyro.current = { x, y };
-    };
-
-    // Function to request permission on iOS
-    const requestAccess = async () => {
-      if (
-        typeof DeviceOrientationEvent !== "undefined" &&
-        typeof DeviceOrientationEvent.requestPermission === "function"
-      ) {
-        try {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-          }
-        } catch (error) {
-          // console.error(error);
-        }
-      }
-    };
-
-    // 1. For Android (Non-iOS 13+ devices) - Works automatically
-    if (
-      typeof window !== "undefined" &&
-      window.DeviceOrientationEvent &&
-      typeof window.DeviceOrientationEvent.requestPermission !== "function"
-    ) {
-      window.addEventListener("deviceorientation", handleOrientation);
-    }
-
-    // 2. For iOS - Listen to ALL interaction types
-    // We add listeners for both touch and click to catch the very first interaction
-    if (typeof window !== "undefined") {
-      const options = { once: true, capture: true };
-      window.addEventListener("touchstart", requestAccess, options);
-      window.addEventListener("click", requestAccess, options);
-      window.addEventListener("pointerdown", requestAccess, options);
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        window.removeEventListener("deviceorientation", handleOrientation);
-        window.removeEventListener("touchstart", requestAccess);
-        window.removeEventListener("click", requestAccess);
-        window.removeEventListener("pointerdown", requestAccess);
-      }
-    };
-  }, []);
 
   useFrame((state, delta) => {
     if (!group.current) return;
 
-    // --- A. Position Movement ---
+    // A. Position Logic
     const targetX = offset * X_SPACING;
     const targetZ = -Math.abs(offset) * 3;
-    const targetY = categoryMounted ? -1 : -12;
+    const targetY = -1;
 
     easing.damp3(
       group.current.position,
       [targetX, targetY, targetZ],
-      0.8,
+      0.6,
       delta
     );
 
-    // --- B. Rotation & Scale Management ---
-    const gyroX = gyro.current.x;
-    const gyroY = gyro.current.y;
+    // B. Rotation Logic
+    const gyroX = gyroData.x;
+    const gyroY = gyroData.y;
 
     if (isActive) {
-      const targetScale = ITEM_SCALE_ACTIVE;
       const currentScale = group.current.scale.x;
       group.current.scale.setScalar(
-        THREE.MathUtils.lerp(currentScale, targetScale, delta * 5)
+        THREE.MathUtils.lerp(currentScale, ITEM_SCALE_ACTIVE, delta * 6)
       );
-
       easing.dampE(group.current.rotation, [gyroX, gyroY, 0], 0.4, delta);
     } else {
-      const targetScale = ITEM_SCALE_SIDE;
       const currentScale = group.current.scale.x;
       group.current.scale.setScalar(
-        THREE.MathUtils.lerp(currentScale, targetScale, delta * 5)
+        THREE.MathUtils.lerp(currentScale, ITEM_SCALE_SIDE, delta * 6)
       );
-
       easing.dampE(
         group.current.rotation,
         [gyroX, offset * -0.2 + gyroY, 0],
         0.4,
         delta
       );
-
       if (modelRef.current) {
         easing.dampE(modelRef.current.rotation, [0, 0, 0], 0.5, delta);
       }
@@ -174,34 +136,38 @@ export default function FoodItem({
 
   if (!isVisible) return null;
 
-  const content = (
-    <group ref={modelRef}>
-      {product?.model_url && shouldLoadModel ? (
-        <RealModel url={product.model_url} index={index} />
-      ) : (
-        <PlaceholderMesh />
-      )}
-    </group>
-  );
-
   return (
     <group ref={group}>
       <PresentationControls
         enabled={isActive}
         global={false}
         cursor={isActive}
-        config={{ mass: 2, tension: 200 }}
+        config={{ mass: 2, tension: 250, friction: 20 }}
         snap={false}
         rotation={[0, 0, 0]}
         polar={[-Math.PI / 4, Math.PI / 4]}
         azimuth={[-Infinity, Infinity]}
       >
         <Float
-          speed={isActive ? 1 : 0}
+          speed={isActive ? 1.5 : 0}
           rotationIntensity={isActive ? 0.2 : 0}
           floatIntensity={isActive ? 0.5 : 0}
         >
-          {content}
+          <group ref={modelRef}>
+            <Suspense fallback={<PlaceholderMesh />}>
+              {!isLoaded && <PlaceholderMesh />}
+
+              {product?.model_url && shouldLoadModel && (
+                <RealModel
+                  url={product.model_url}
+                  productTitle={product.title?.en || `Item ${index}`}
+                  onLoad={() => setIsLoaded(true)}
+                />
+              )}
+            </Suspense>
+
+            {!product.model_url && <PlaceholderMesh />}
+          </group>
         </Float>
       </PresentationControls>
     </group>
