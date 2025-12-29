@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, ContactShadows } from "@react-three/drei";
 import { Suspense, useEffect } from "react"; // Suspense is still needed for Shadows/Environment
 import FoodItem from "./FoodItem";
+import BackgroundParticles from "./BackgroundParticles";
 
 function LinearCarousel({ products, activeIndex, gyroData }) {
   return (
@@ -43,7 +44,7 @@ export default function Scene({ activeProducts, activeIndex, gyroData }) {
           stencil: false,
         }}
       >
-        <color attach="background" args={["#000000"]} />
+        <color attach="background" args={["#080808"]} />
 
         <Environment preset="city" blur={0.8} resolution={256} />
 
@@ -68,6 +69,7 @@ export default function Scene({ activeProducts, activeIndex, gyroData }) {
           />
         )}
 
+        <BackgroundParticles gyroData={gyroData} />
         {/* Shadows need their own Suspense so they don't block anything */}
         <Suspense fallback={null}>
           <ContactShadows
