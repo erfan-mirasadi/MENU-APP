@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const restaurant = await getRestaurantByOwnerId(user.id);
 
   if (authError || !user) {
-    redirect("/admin/login");
+    redirect("/login");
   }
 
   if (!restaurant) {

@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 export async function getOrderItems(sessionId) {
   if (!sessionId) return [];
 
+  // 1. Gereftan hameye order ha baraye in session (miz)
   const { data, error } = await supabase
     .from("order_items")
     .select(`*, product:products (title, price, image_url)`)
@@ -48,7 +49,6 @@ export async function updateOrderItemQuantity(itemId, quantity) {
     throw error;
   }
 
-  // Item may have been removed by realtime update - this is expected
   if (!data || data.length === 0) {
     return null;
   }

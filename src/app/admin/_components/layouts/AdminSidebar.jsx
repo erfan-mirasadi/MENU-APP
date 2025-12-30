@@ -18,7 +18,7 @@ export default function AdminSidebar() {
       if (error) throw error;
 
       toast.success("Logged out successfully");
-      router.push("/admin/login");
+      router.push("/login");
       router.refresh();
     } catch (error) {
       console.error("Logout Error:", error);

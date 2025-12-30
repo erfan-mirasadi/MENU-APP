@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getTableByNumber } from "@/services/tableService";
 import { getActiveSession, createSession } from "@/services/sessionService";
@@ -16,7 +16,10 @@ export const useCart = (tableNumberFromUrl) => {
   const [guestId, setGuestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Setup Session & Guest
+  // استفاده از Ref برای جلوگیری از رندرهای تکراری در لاگ
+  const sessionRef = useRef(null);
+
+  // 1. Setup Session & Guest
   useEffect(() => {
     if (!tableNumberFromUrl) return;
 
@@ -29,50 +32,98 @@ export const useCart = (tableNumberFromUrl) => {
         }
         setGuestId(storedGuestId);
 
+        console.log("🔍 Checking Table:", tableNumberFromUrl);
         const tableData = await getTableByNumber(tableNumberFromUrl);
-        if (!tableData) return;
+
+        if (!tableData) {
+          console.error("❌ Table not found");
+          return;
+        }
 
         const realTableUuid = tableData.id;
         const realRestaurantId = tableData.restaurant_id;
 
         let session = await getActiveSession(realTableUuid);
         if (!session) {
+          console.log("🆕 Creating new session...");
           session = await createSession(realTableUuid, realRestaurantId);
+        } else {
+          console.log("✅ Found active session:", session.id);
         }
+
         setSessionId(session?.id);
+        sessionRef.current = session?.id;
       } catch (err) {
-        console.error("Error init session:", err);
+        console.error("❌ Error init session:", err);
       }
     };
 
     initializeSession();
   }, [tableNumberFromUrl]);
 
-  // Fetch Cart Items (Realtime)
+  // تابع فچ کردن با لاگ دقیق
+  const fetchCartItems = useCallback(async (triggeredBy = "Manual") => {
+    const currentSessionId = sessionRef.current;
+    if (!currentSessionId) return;
+
+    // console.log(`📥 Fetching Items [Trigger: ${triggeredBy}]...`);
+
+    // یک تاخیر کوچک برای اطمینان از اینکه دیتابیس آپدیت شده
+    if (triggeredBy === "Realtime") {
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
+    const data = await getOrderItems(currentSessionId);
+
+    console.log(`📊 Cart Data Updated (${data.length} items):`, data);
+    setCartItems(data);
+    setIsLoading(false);
+  }, []);
+
+  // 2. Fetch Cart Items & REALTIME SUBSCRIPTION
   useEffect(() => {
     if (!sessionId) return;
-    fetchCartItems();
+
+    // بار اول فچ کن
+    fetchCartItems("Initial Load");
+
+    console.log("🔌 Subscribing to Realtime channel for session:", sessionId);
+
     const channel = supabase
-      .channel(`session-${sessionId}`)
+      .channel(`room-${sessionId}`) // اسم کانال ساده‌تر
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "*", // INSERT, UPDATE, DELETE
           schema: "public",
           table: "order_items",
           filter: `session_id=eq.${sessionId}`,
         },
-        () => fetchCartItems()
-      )
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [sessionId]);
+        (payload) => {
+          console.log(
+            "🔔 Realtime Event:",
+            payload.eventType,
+            payload.new || payload.old
+          );
 
-  const fetchCartItems = async () => {
-    const data = await getOrderItems(sessionId);
-    setCartItems(data);
-    setIsLoading(false);
-  };
+          // اگر آیتم جدید اضافه شده، دستی به استیت اضافه کن تا منتظر فچ نمونی (برای تست)
+          if (payload.eventType === "INSERT") {
+            console.log("⚡ Fast Update: Fetching new data...");
+            fetchCartItems("Realtime");
+          } else {
+            fetchCartItems("Realtime");
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 Subscription Status: ${status}`);
+      });
+
+    return () => {
+      console.log("🔌 Unsubscribing...");
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, fetchCartItems]);
 
   // --- ACTIONS ---
 
@@ -84,8 +135,10 @@ export const useCart = (tableNumberFromUrl) => {
         (item) => item.product_id === product.id && item.status === "draft"
       );
 
+      // Optimistic Update Log
+      console.log("🚀 Optimistic Add:", product.title);
+
       if (existingItem) {
-        // 1. آپدیت UI (سریع)
         setCartItems((prev) =>
           prev.map((item) =>
             item.id === existingItem.id
@@ -94,35 +147,14 @@ export const useCart = (tableNumberFromUrl) => {
           )
         );
 
-        // 2. جلوگیری از کرش: اگر آیدی موقته، به سرور درخواست نده
-        if (existingItem.id.toString().startsWith("temp-")) {
-          // درخواست قبلی هنوز تو راهه، پس صبر میکنیم (Realtime خودش سینک میکنه)
-          return;
-        }
+        if (existingItem.id.toString().startsWith("temp-")) return;
 
-        // 3. اگر آیدی واقعیه، آپدیت کن
-        const result = await updateOrderItemQuantity(
+        await updateOrderItemQuantity(
           existingItem.id,
           existingItem.quantity + 1
         );
-
-        // Race condition check
-        if (!result) {
-          // اگر آیتم حذف شده بود و ما خبر نداشتیم، دوباره بساز
-          await addOrderItem({
-            session_id: sessionId,
-            product_id: product.id,
-            quantity: 1,
-            unit_price_at_order: product.price,
-            added_by_guest_id: guestId,
-            status: "draft",
-          });
-        }
       } else {
-        // آیتم جدید
         const tempId = `temp-${Date.now()}`;
-
-        // Optimistic UI Update
         setCartItems((prev) => [
           ...prev,
           {
@@ -149,8 +181,8 @@ export const useCart = (tableNumberFromUrl) => {
         });
       }
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      fetchCartItems(); // Revert on error
+      console.error("❌ Add Error:", error);
+      fetchCartItems("Error Recovery");
     }
   };
 
@@ -158,14 +190,11 @@ export const useCart = (tableNumberFromUrl) => {
     try {
       const existingItem = cartItems.find((item) => item.id === itemId);
       if (!existingItem) return;
+      if (existingItem.id.toString().startsWith("temp-")) return;
 
-      // جلوگیری از کرش: اگر آیدی موقته، هیچ کاری نکن
-      if (existingItem.id.toString().startsWith("temp-")) {
-        return;
-      }
+      console.log("🔻 Optimistic Decrease");
 
       if (existingItem.quantity > 1) {
-        // Optimistic UI
         setCartItems((prev) =>
           prev.map((item) =>
             item.id === itemId ? { ...item, quantity: item.quantity - 1 } : item
@@ -176,20 +205,17 @@ export const useCart = (tableNumberFromUrl) => {
           existingItem.quantity - 1
         );
       } else {
-        // Optimistic UI
         setCartItems((prev) => prev.filter((item) => item.id !== itemId));
         await removeOrderItem(itemId);
       }
     } catch (error) {
-      console.error("Error decreasing from cart:", error);
-      fetchCartItems();
+      console.error("❌ Decrease Error:", error);
+      fetchCartItems("Error Recovery");
     }
   };
 
   const removeFromCart = async (itemId) => {
-    // جلوگیری از کرش
     if (itemId.toString().startsWith("temp-")) return;
-
     setCartItems((prev) => prev.filter((item) => item.id !== itemId));
     await removeOrderItem(itemId);
   };

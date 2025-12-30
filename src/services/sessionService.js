@@ -4,10 +4,12 @@ import toast from "react-hot-toast";
 export async function getActiveSession(tableId) {
   const { data, error } = await supabase
     .from("sessions")
-    .select("id")
+    .select("*")
     .eq("table_id", tableId)
-    .eq("status", "ordering")
-    .single();
+    .neq("status", "closed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (error && error.code !== "PGRST116") {
     console.error("Error fetching session:", error);
@@ -15,7 +17,6 @@ export async function getActiveSession(tableId) {
 
   return data;
 }
-
 
 export async function createSession(tableId, restaurantId) {
   const { data, error } = await supabase

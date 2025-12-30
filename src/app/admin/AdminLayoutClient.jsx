@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 import AdminMobileNav from "./_components/layouts/AdminMobileNav";
 import AdminSidebar from "./_components/layouts/AdminSidebar";
+import { NAV_LINKS } from "./_components/layouts/navLinks";
 
 export default function AdminLayoutClient({ children, user, restaurant }) {
   const pathname = usePathname();
@@ -27,7 +28,7 @@ export default function AdminLayoutClient({ children, user, restaurant }) {
         </div>
       </main>
 
-      <AdminMobileNav user={user} restaurant={restaurant} />
+      <AdminMobileNav user={user} restaurant={restaurant} links={NAV_LINKS} />
     </div>
   );
 }
