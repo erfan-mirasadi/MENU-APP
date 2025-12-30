@@ -3,9 +3,11 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
-import { useGLTF, useProgress } from "@react-three/drei";
+import { useGLTF, useProgress } from "@react-three/drei"; // Added useProgress for real loading state
 
 // --- GLOBAL VARIABLES ---
+// Shared object for gyroscope data to avoid React re-renders.
+// This logic remains UNTOUCHED as requested.
 const gyroData = { x: 0, y: 0 };
 const GYRO_INTENSITY = 40;
 
@@ -14,10 +16,11 @@ export default function ThreeDLayout({ restaurant, categories }) {
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // State مخصوص نمایش دکمه شروع برای آیفون
-  const [showIOSPermissionCard, setShowIOSPermissionCard] = useState(false);
+  // STATE FOR INVISIBLE IOS TRAP
+  const [showIOSTrap, setShowIOSTrap] = useState(false);
 
-  // REAL LOADER LOGIC
+  // REAL LOADER LOGIC:
+  // 'active' is true whenever Three.js is downloading/processing assets.
   const { active } = useProgress();
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
@@ -32,12 +35,19 @@ export default function ThreeDLayout({ restaurant, categories }) {
   // --- LOGIC: CATEGORY TRANSITION ---
   useEffect(() => {
     setActiveIndex(0);
+
+    // Clear GLTF Cache when category changes to free memory
     useGLTF.clear();
+
+    // We don't need artificial timeouts anymore.
+    // The 'active' state from useProgress will automatically handle the UI.
   }, [activeCatId]);
 
   // --- LOGIC: SMART PRELOADING ---
   useEffect(() => {
     if (!activeProducts.length) return;
+
+    // Prioritize loading current, next, and previous items
     const priorityList = new Set([
       0,
       1,
@@ -56,31 +66,30 @@ export default function ThreeDLayout({ restaurant, categories }) {
     });
   }, [activeIndex, activeProducts]);
 
-  // --- LOGIC: GYROSCOPE & PERMISSION CHECK ---
+  // --- LOGIC: GYROSCOPE SENSOR (The Invisible Trap Logic) ---
   useEffect(() => {
     const handleOrientation = (event) => {
       gyroData.x = (event.beta || 0) / GYRO_INTENSITY;
       gyroData.y = (event.gamma || 0) / GYRO_INTENSITY;
     };
 
-    // 1. Android / PC (Auto Start)
+    // 1. Android / Standard Browsers (Auto Start)
     if (
       typeof window !== "undefined" &&
       window.DeviceOrientationEvent &&
       typeof window.DeviceOrientationEvent.requestPermission !== "function"
     ) {
-      // اندروید نیازی به اجازه ندارد
       window.addEventListener("deviceorientation", handleOrientation);
-      setShowIOSPermissionCard(false); // کارت مخفی
+      setShowIOSTrap(false); // No trap needed for Android
     }
-    // 2. iOS Detection (Show Card)
+    // 2. iOS Detection (Activate Trap)
     else if (
       typeof window !== "undefined" &&
       typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function"
     ) {
-      // اگر آیفون بود، کارت رو نشون بده تا کاربر کلیک کنه
-      setShowIOSPermissionCard(true);
+      // It's an iPhone. Show the invisible layer to trap the first click.
+      setShowIOSTrap(true);
     }
 
     return () => {
@@ -90,27 +99,24 @@ export default function ThreeDLayout({ restaurant, categories }) {
     };
   }, []);
 
-  // --- FUNCTION: Handle iOS Button Click ---
-  const handleIOSStart = async () => {
+  // --- FUNCTION: HANDLE THE TRAP CLICK ---
+  const handleIOSTrapClick = async () => {
     try {
-      // درخواست مستقیم روی کلیک دکمه (این همیشه کار میکنه)
+      // Request permission on the very first interaction
       const permission = await DeviceOrientationEvent.requestPermission();
 
       if (permission === "granted") {
-        // اگر اجازه داد، سنسور رو وصل کن و کارت رو بردار
         window.addEventListener("deviceorientation", (event) => {
           gyroData.x = (event.beta || 0) / GYRO_INTENSITY;
           gyroData.y = (event.gamma || 0) / GYRO_INTENSITY;
         });
-        setShowIOSPermissionCard(false);
-      } else {
-        // اگر کنسل کرد، کارت میمونه ولی شاید متنی نشون بدی (اختیاری)
-        alert("برای تجربه سه بعدی، لطفا اجازه دسترسی به سنسور را بدهید.");
       }
     } catch (error) {
-      console.error(error);
-      // در صورت ارور هم کارت رو برمیداریم که سایت بلاک نشه (بدون سنسور کار کنه)
-      setShowIOSPermissionCard(false);
+      // Even if they deny or error, we MUST remove the trap
+      // so they can actually use the site (click buttons, scroll, etc.)
+    } finally {
+      // Destroy the trap immediately after the first attempt
+      setShowIOSTrap(false);
     }
   };
 
@@ -152,6 +158,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
     const element = document.querySelector(".three-d-container");
     if (!element) return;
     const handleTouchMove = (e) => {
+      // Only prevent default if not scrolling horizontally in category bar
       if (!e.target.closest(".category-scroll")) {
         e.preventDefault();
       }
@@ -166,24 +173,23 @@ export default function ThreeDLayout({ restaurant, categories }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* --- IOS PERMISSION OVERLAY (فقط برای آیفون میاد) --- */}
-      {showIOSPermissionCard && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-          {/* لوگو یا عکس رستوران میتونه اینجا باشه */}
-          <h2 className="text-white text-xl font-bold mb-2">Welcome</h2>
-          <p className="text-white/70 text-sm mb-6 px-8 text-center">
-            Tap below to enter the immersive experience.
-          </p>
-          <button
-            onClick={handleIOSStart}
-            className="px-8 py-3 bg-white text-black font-bold rounded-full animate-pulse active:scale-95 transition-transform"
-          >
-            Enter Experience
-          </button>
-        </div>
+      {/* --- THE INVISIBLE iOS TRAP 🪤 --- 
+          Z-Index 100 ensures it sits on top of EVERYTHING.
+          Opacity 0 ensures user doesn't see it.
+          Only renders if showIOSTrap is true.
+      */}
+      {showIOSTrap && (
+        <div
+          onClick={handleIOSTrapClick}
+          className="absolute inset-0 z-[100] cursor-pointer opacity-0"
+          style={{ touchAction: "manipulation" }} // Helps mobile browsers handle tap better
+        ></div>
       )}
 
-      {/* --- LOADER UI --- */}
+      {/* --- REAL LOADER UI ---
+         Controlled by 'active' from useProgress().
+         Only visible when actual network requests are happening.
+      */}
       <div
         className={`absolute inset-0 z-10 pointer-events-none transition-all duration-300 flex items-center justify-center
         ${
@@ -209,6 +215,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
         activeCatId={activeCatId}
         setActiveCatId={setActiveCatId}
         focusedProduct={focusedProduct}
+        // UI shows when loading finishes
         categoryMounted={!active}
       />
     </div>
