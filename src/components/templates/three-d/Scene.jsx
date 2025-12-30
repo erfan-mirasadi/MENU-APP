@@ -44,7 +44,7 @@ export default function Scene({ activeProducts, activeIndex, gyroData }) {
           stencil: false,
         }}
       >
-        <color attach="background" args={["#080808"]} />
+        <color attach="background" args={["#000000"]} />
 
         <Environment preset="city" blur={0.8} resolution={256} />
 
