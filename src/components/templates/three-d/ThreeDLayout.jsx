@@ -57,7 +57,6 @@ export default function ThreeDLayout({ restaurant, categories }) {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 600);
-
     return () => clearTimeout(timer);
   }, [activeCatId]);
 
@@ -134,8 +133,11 @@ export default function ThreeDLayout({ restaurant, categories }) {
     };
   }, []);
 
-  // --- LOGIC: TOUCH GESTURES ---
+  // --- LOGIC: TOUCH GESTURES (SWIPE PRODUCTS) ---
   const handleTouchStart = useCallback((e) => {
+    // ✅ FIX 1: اگر کاربر داره روی لیست دسته‌بندی تاچ میکنه، اسوایپ محصول رو فعال نکن
+    if (e.target.closest(".category-scroll")) return;
+
     const touch = e.touches[0];
     touchStartRef.current = {
       x: touch.clientX,
@@ -146,7 +148,8 @@ export default function ThreeDLayout({ restaurant, categories }) {
 
   const handleTouchEnd = useCallback(
     (e) => {
-      if (!touchStartRef.current) return;
+      if (!touchStartRef.current || touchStartRef.current.time === 0) return;
+
       const touch = e.changedTouches[0];
       const deltaX = touch.clientX - touchStartRef.current.x;
       const deltaY = touch.clientY - touchStartRef.current.y;
@@ -164,6 +167,9 @@ export default function ThreeDLayout({ restaurant, categories }) {
           setActiveIndex((prev) => prev + 1);
         }
       }
+
+      // Reset ref
+      touchStartRef.current = { x: 0, y: 0, time: 0 };
     },
     [activeIndex, activeProducts.length]
   );
@@ -171,7 +177,14 @@ export default function ThreeDLayout({ restaurant, categories }) {
   useEffect(() => {
     const element = document.querySelector(".three-d-container");
     if (!element) return;
-    const handleTouchMove = (e) => e.preventDefault();
+
+    const handleTouchMove = (e) => {
+      if (e.target.closest(".category-scroll")) {
+        return;
+      }
+      e.preventDefault();
+    };
+
     element.addEventListener("touchmove", handleTouchMove, { passive: false });
     return () => element.removeEventListener("touchmove", handleTouchMove);
   }, []);

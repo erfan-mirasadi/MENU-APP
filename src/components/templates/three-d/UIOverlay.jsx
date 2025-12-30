@@ -146,7 +146,7 @@ export default function UIOverlay({
       </div>
 
       {/* --- BOTTOM CATEGORY NAV --- */}
-      <div className="absolute bottom-0 left-0 w-full z-50 pb-6 pointer-events-none">
+      <div className="absolute bottom-0 left-0 w-full z-50 pb-8 pointer-events-none">
         <div className="category-scroll w-full overflow-x-auto no-scrollbar px-4 pointer-events-auto">
           <div className="flex gap-6 min-w-max pt-4">
             {categories.map((cat) => {
