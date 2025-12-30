@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
-import { useGLTF, useProgress } from "@react-three/drei";
+import { useGLTF, useProgress } from "@react-three/drei"; // Added useProgress for real loading state
 
 // --- GLOBAL VARIABLES ---
 // Shared object for gyroscope data to avoid React re-renders.
+// This logic remains UNTOUCHED as requested.
 const gyroData = { x: 0, y: 0 };
 const GYRO_INTENSITY = 40;
 
@@ -15,13 +16,16 @@ export default function ThreeDLayout({ restaurant, categories }) {
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // REAL LOADER LOGIC
+  // REAL LOADER LOGIC:
+  // 'active' is true whenever Three.js is downloading/processing assets.
   const { active } = useProgress();
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
-  // Track the last time permission was denied to handle the 30s cooldown
+  // Ref to track permission denial time (for 30s cooldown)
   const lastPermissionDenyTime = useRef(0);
+  // Ref to track if we already have permission (to stop asking)
+  const isPermissionGranted = useRef(false);
 
   // Compute active products
   const activeProducts = useMemo(() => {
@@ -33,12 +37,19 @@ export default function ThreeDLayout({ restaurant, categories }) {
   // --- LOGIC: CATEGORY TRANSITION ---
   useEffect(() => {
     setActiveIndex(0);
+
+    // Clear GLTF Cache when category changes to free memory
     useGLTF.clear();
+
+    // We don't need artificial timeouts anymore.
+    // The 'active' state from useProgress will automatically handle the UI.
   }, [activeCatId]);
 
   // --- LOGIC: SMART PRELOADING ---
   useEffect(() => {
     if (!activeProducts.length) return;
+
+    // Prioritize loading current, next, and previous items
     const priorityList = new Set([
       0,
       1,
@@ -46,6 +57,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
       activeIndex + 1,
       activeIndex - 1,
     ]);
+
     priorityList.forEach((idx) => {
       if (idx >= 0 && idx < activeProducts.length) {
         const product = activeProducts[idx];
@@ -56,16 +68,19 @@ export default function ThreeDLayout({ restaurant, categories }) {
     });
   }, [activeIndex, activeProducts]);
 
-  // --- LOGIC: GYROSCOPE SENSOR (iOS Permission + 30s Retry Logic) ---
+  // --- LOGIC: GYROSCOPE SENSOR (FIXED: iOS touchend + 30s Cooldown) ---
   useEffect(() => {
     const handleOrientation = (event) => {
       gyroData.x = (event.beta || 0) / GYRO_INTENSITY;
       gyroData.y = (event.gamma || 0) / GYRO_INTENSITY;
     };
 
-    // Function to request permission (Only for iOS 13+)
+    // Main function to request iOS permission
     const requestAccess = async () => {
-      // 1. Check if the API exists (iOS check)
+      // 1. If already granted, do nothing.
+      if (isPermissionGranted.current) return;
+
+      // 2. Check if the API exists (iOS check)
       if (
         typeof DeviceOrientationEvent === "undefined" ||
         typeof DeviceOrientationEvent.requestPermission !== "function"
@@ -73,27 +88,33 @@ export default function ThreeDLayout({ restaurant, categories }) {
         return;
       }
 
-      // 2. Check Cooldown (30 Seconds)
-      // If user denied recently, don't annoy them immediately.
+      // 3. Check Cooldown (30 Seconds)
+      // If user denied less than 30 seconds ago, STOP here.
+      // Do not remove listener, just don't ask yet.
       const now = Date.now();
       if (now - lastPermissionDenyTime.current < 30000) {
         return;
       }
 
       try {
-        // 3. Request Permission
+        // 4. Request Permission
         const permission = await DeviceOrientationEvent.requestPermission();
 
         if (permission === "granted") {
-          // Success: Attach sensor and remove the click listener forever
+          // Success!
+          isPermissionGranted.current = true;
           window.addEventListener("deviceorientation", handleOrientation);
+
+          // Remove triggers immediately so we never ask again
+          window.removeEventListener("touchend", requestAccess);
           window.removeEventListener("click", requestAccess);
         } else {
-          // Denied/Canceled: Record time to start 30s cooldown
+          // Denied or Dismissed
+          // Record the time. We won't ask again for 30 seconds.
           lastPermissionDenyTime.current = Date.now();
         }
       } catch (error) {
-        console.warn("Gyro permission error or denied", error);
+        console.warn("Gyro permission error", error);
         // Treat error as denial for cooldown purposes
         lastPermissionDenyTime.current = Date.now();
       }
@@ -101,13 +122,14 @@ export default function ThreeDLayout({ restaurant, categories }) {
 
     // --- SETUP LISTENERS ---
 
-    // A. Android / Standard Browsers (No permission needed)
+    // A. Android / Standard Browsers (Auto-start, no permission needed)
     if (
       typeof window !== "undefined" &&
       window.DeviceOrientationEvent &&
       typeof window.DeviceOrientationEvent.requestPermission !== "function"
     ) {
       window.addEventListener("deviceorientation", handleOrientation);
+      isPermissionGranted.current = true;
     }
 
     // B. iOS (Requires User Interaction)
@@ -116,14 +138,18 @@ export default function ThreeDLayout({ restaurant, categories }) {
       typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function"
     ) {
-      // We use 'click' because it triggers AFTER the user lifts their finger (Touch End).
-      // This satisfies the requirement: "az vaqti k avalin touch ro anjam mide va dastesho barmidare"
+      // We use 'touchend' to capture the moment the user LIFTS their finger.
+      // This covers swipes, scrolls, and taps.
+      window.addEventListener("touchend", requestAccess);
+
+      // Keep 'click' as a backup just in case
       window.addEventListener("click", requestAccess);
     }
 
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("deviceorientation", handleOrientation);
+        window.removeEventListener("touchend", requestAccess);
         window.removeEventListener("click", requestAccess);
       }
     };
@@ -167,6 +193,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
     const element = document.querySelector(".three-d-container");
     if (!element) return;
     const handleTouchMove = (e) => {
+      // Only prevent default if not scrolling horizontally in category bar
       if (!e.target.closest(".category-scroll")) {
         e.preventDefault();
       }
@@ -181,7 +208,10 @@ export default function ThreeDLayout({ restaurant, categories }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* LOADER UI */}
+      {/* --- REAL LOADER UI ---
+         Controlled by 'active' from useProgress().
+         Only visible when actual network requests are happening.
+      */}
       <div
         className={`absolute inset-0 z-10 pointer-events-none transition-all duration-300 flex items-center justify-center
         ${
@@ -207,6 +237,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
         activeCatId={activeCatId}
         setActiveCatId={setActiveCatId}
         focusedProduct={focusedProduct}
+        // UI shows when loading finishes
         categoryMounted={!active}
       />
     </div>
