@@ -3,11 +3,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
-import { useGLTF, useProgress } from "@react-three/drei"; // Added useProgress for real loading state
+import { useGLTF, useProgress } from "@react-three/drei";
 
 // --- GLOBAL VARIABLES ---
-// Shared object for gyroscope data to avoid React re-renders.
-// This logic remains UNTOUCHED as requested.
 const gyroData = { x: 0, y: 0 };
 const GYRO_INTENSITY = 40;
 
@@ -16,14 +14,13 @@ export default function ThreeDLayout({ restaurant, categories }) {
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // REAL LOADER LOGIC:
+  // State مخصوص نمایش دکمه شروع برای آیفون
+  const [showIOSPermissionCard, setShowIOSPermissionCard] = useState(false);
+
+  // REAL LOADER LOGIC
   const { active } = useProgress();
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
-
-  // Refs for permission logic
-  const lastPermissionDenyTime = useRef(0);
-  const isPermissionGranted = useRef(false);
 
   // Compute active products
   const activeProducts = useMemo(() => {
@@ -35,7 +32,6 @@ export default function ThreeDLayout({ restaurant, categories }) {
   // --- LOGIC: CATEGORY TRANSITION ---
   useEffect(() => {
     setActiveIndex(0);
-    // Clear GLTF Cache when category changes to free memory
     useGLTF.clear();
   }, [activeCatId]);
 
@@ -60,21 +56,31 @@ export default function ThreeDLayout({ restaurant, categories }) {
     });
   }, [activeIndex, activeProducts]);
 
-  // --- LOGIC: GYROSCOPE SENSOR (Android/Standard Auto-Start) ---
+  // --- LOGIC: GYROSCOPE & PERMISSION CHECK ---
   useEffect(() => {
     const handleOrientation = (event) => {
       gyroData.x = (event.beta || 0) / GYRO_INTENSITY;
       gyroData.y = (event.gamma || 0) / GYRO_INTENSITY;
     };
 
-    // 1. Android & Non-iOS devices (Auto-start without permission)
+    // 1. Android / PC (Auto Start)
     if (
       typeof window !== "undefined" &&
       window.DeviceOrientationEvent &&
       typeof window.DeviceOrientationEvent.requestPermission !== "function"
     ) {
+      // اندروید نیازی به اجازه ندارد
       window.addEventListener("deviceorientation", handleOrientation);
-      isPermissionGranted.current = true;
+      setShowIOSPermissionCard(false); // کارت مخفی
+    }
+    // 2. iOS Detection (Show Card)
+    else if (
+      typeof window !== "undefined" &&
+      typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function"
+    ) {
+      // اگر آیفون بود، کارت رو نشون بده تا کاربر کلیک کنه
+      setShowIOSPermissionCard(true);
     }
 
     return () => {
@@ -84,48 +90,29 @@ export default function ThreeDLayout({ restaurant, categories }) {
     };
   }, []);
 
-  // --- LOGIC: iOS PERMISSION HANDLER (The "Capture" Trick) ---
-  // We use this function directly on the main div's onClickCapture
-  const handleIOSPermission = useCallback(async () => {
-    // A. Stop if already granted
-    if (isPermissionGranted.current) return;
-
-    // B. Check if this is an iOS device requiring permission
-    if (
-      typeof DeviceOrientationEvent === "undefined" ||
-      typeof DeviceOrientationEvent.requestPermission !== "function"
-    ) {
-      return;
-    }
-
-    // C. Cooldown Logic (30 Seconds)
-    const now = Date.now();
-    if (now - lastPermissionDenyTime.current < 30000) {
-      // Still in cooldown, do not ask, let the click pass through
-      return;
-    }
-
+  // --- FUNCTION: Handle iOS Button Click ---
+  const handleIOSStart = async () => {
     try {
-      // D. Request Permission
+      // درخواست مستقیم روی کلیک دکمه (این همیشه کار میکنه)
       const permission = await DeviceOrientationEvent.requestPermission();
 
       if (permission === "granted") {
-        isPermissionGranted.current = true;
-        // Attach the listener immediately
+        // اگر اجازه داد، سنسور رو وصل کن و کارت رو بردار
         window.addEventListener("deviceorientation", (event) => {
           gyroData.x = (event.beta || 0) / GYRO_INTENSITY;
           gyroData.y = (event.gamma || 0) / GYRO_INTENSITY;
         });
+        setShowIOSPermissionCard(false);
       } else {
-        // Denied: Reset timer
-        lastPermissionDenyTime.current = Date.now();
+        // اگر کنسل کرد، کارت میمونه ولی شاید متنی نشون بدی (اختیاری)
+        alert("برای تجربه سه بعدی، لطفا اجازه دسترسی به سنسور را بدهید.");
       }
     } catch (error) {
-      console.warn("Gyro permission denied or error", error);
-      // Error means denied usually, reset timer
-      lastPermissionDenyTime.current = Date.now();
+      console.error(error);
+      // در صورت ارور هم کارت رو برمیداریم که سایت بلاک نشه (بدون سنسور کار کنه)
+      setShowIOSPermissionCard(false);
     }
-  }, []);
+  };
 
   // --- LOGIC: TOUCH GESTURES ---
   const handleTouchStart = useCallback((e) => {
@@ -178,10 +165,24 @@ export default function ThreeDLayout({ restaurant, categories }) {
       className="three-d-container relative w-full h-[100dvh] bg-black overflow-hidden select-none font-sans"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      // TRICK: onClickCapture triggers BEFORE any child element handles the click.
-      // This ensures we catch the very first interaction anywhere on screen.
-      onClickCapture={handleIOSPermission}
     >
+      {/* --- IOS PERMISSION OVERLAY (فقط برای آیفون میاد) --- */}
+      {showIOSPermissionCard && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+          {/* لوگو یا عکس رستوران میتونه اینجا باشه */}
+          <h2 className="text-white text-xl font-bold mb-2">Welcome</h2>
+          <p className="text-white/70 text-sm mb-6 px-8 text-center">
+            Tap below to enter the immersive experience.
+          </p>
+          <button
+            onClick={handleIOSStart}
+            className="px-8 py-3 bg-white text-black font-bold rounded-full animate-pulse active:scale-95 transition-transform"
+          >
+            Enter Experience
+          </button>
+        </div>
+      )}
+
       {/* --- LOADER UI --- */}
       <div
         className={`absolute inset-0 z-10 pointer-events-none transition-all duration-300 flex items-center justify-center
