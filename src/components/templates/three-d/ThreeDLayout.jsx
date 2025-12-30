@@ -4,6 +4,9 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
 import { useGLTF } from "@react-three/drei";
+// --- Import Hooks ---
+import { useParams } from "next/navigation";
+import { useCart } from "@/app/hooks/useCart";
 
 // --- GLOBAL VARIABLES ---
 // Shared object for gyroscope data to avoid React re-renders
@@ -11,6 +14,19 @@ const gyroData = { x: 0, y: 0 };
 const GYRO_INTENSITY = 40;
 
 export default function ThreeDLayout({ restaurant, categories }) {
+  // --- USE CART HOOK INITIALIZATION ---
+  const params = useParams();
+  // We assume the route param is named 'table_id' or similar.
+  // If your folder is [tableId], change this to params.tableId
+  const {
+    cartItems,
+    addToCart,
+    removeFromCart,
+    decreaseFromCart,
+    submitOrder,
+    isLoading: isLoadingCart,
+  } = useCart(params?.table_id);
+
   // --- STATE MANAGEMENT ---
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -166,10 +182,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* --- CUSTOM SMOOTH LOADER ---
-        Applies a blur effect to the canvas when loading/switching categories.
-        This hides the rendering glitch and provides a premium feel.
-      */}
+      {/* --- CUSTOM SMOOTH LOADER --- */}
       <div
         className={`absolute inset-0 z-10 pointer-events-none transition-all duration-500 flex items-center justify-center
         ${
@@ -178,7 +191,6 @@ export default function ThreeDLayout({ restaurant, categories }) {
             : "backdrop-blur-0 bg-transparent opacity-0"
         }`}
       >
-        {/* Simple CSS Spinner */}
         {isLoading && (
           <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
         )}
@@ -190,13 +202,21 @@ export default function ThreeDLayout({ restaurant, categories }) {
         gyroData={gyroData}
       />
 
+      {/* --- UI OVERLAY with CART PROPS --- */}
       <UIOverlay
         restaurant={restaurant}
         categories={categories}
         activeCatId={activeCatId}
         setActiveCatId={setActiveCatId}
         focusedProduct={focusedProduct}
-        categoryMounted={!isLoading} // Only show UI details when loading is done
+        categoryMounted={!isLoading}
+        // Cart Props
+        cartItems={cartItems}
+        addToCart={addToCart}
+        decreaseFromCart={decreaseFromCart}
+        removeFromCart={removeFromCart}
+        submitOrder={submitOrder}
+        isLoadingCart={isLoadingCart}
       />
     </div>
   );

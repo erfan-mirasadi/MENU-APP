@@ -40,8 +40,7 @@ export async function updateOrderItemQuantity(itemId, quantity) {
     .from("order_items")
     .update({ quantity })
     .eq("id", itemId)
-    .select()
-    .single();
+    .select();
 
   if (error) {
     console.error("Error updating order item:", error);
@@ -49,7 +48,12 @@ export async function updateOrderItemQuantity(itemId, quantity) {
     throw error;
   }
 
-  return data;
+  // Item may have been removed by realtime update - this is expected
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  return data[0];
 }
 
 export async function removeOrderItem(itemId) {

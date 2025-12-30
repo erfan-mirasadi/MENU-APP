@@ -6,6 +6,9 @@ import Image from "next/image";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import { useLanguage } from "@/context/LanguageContext";
 
+import CartControls from "./CartControls";
+import ModernCartDrawer from "../modern/ModernCartDrawer";
+
 const styles = `
   @keyframes blurFadeIn {
     0% { opacity: 0; filter: blur(10px); transform: translateY(10px); }
@@ -22,9 +25,16 @@ const styles = `
   .animate-swipe {
     animation: swipeHint 2s infinite;
   }
+  /* --- انیمیشن جدید با دامنه حرکت بیشتر --- */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-18px); } /* قبلا 8 بود الان 18 شد */
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
 `;
 
-// --- کامپوننت راهنمای Swipe ---
 function SwipeHint() {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -60,8 +70,16 @@ export default function UIOverlay({
   setActiveCatId,
   focusedProduct,
   categoryMounted,
+  // Cart Props
+  cartItems,
+  addToCart,
+  decreaseFromCart,
+  removeFromCart,
+  submitOrder,
+  isLoadingCart,
 }) {
   const { content } = useLanguage();
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
     <>
@@ -69,9 +87,27 @@ export default function UIOverlay({
       <Loader />
       <SwipeHint />
 
+      {/* --- CONTROLS --- */}
+      <CartControls
+        focusedProduct={focusedProduct}
+        cartItems={cartItems || []}
+        onAdd={addToCart}
+        onDecrease={decreaseFromCart}
+        onRemove={removeFromCart}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
+
+      {/* --- DRAWER --- */}
+      <ModernCartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cartItems || []}
+        onRemove={removeFromCart}
+        onSubmit={submitOrder}
+      />
+
       {/* --- HEADER --- */}
       <div className="absolute top-0 left-0 w-full z-10 p-6 pt-10 text-center pointer-events-none">
-        {/* Language Switcher */}
         <div className="absolute top-3 right-3 pointer-events-auto">
           <LanguageSwitcher />
         </div>

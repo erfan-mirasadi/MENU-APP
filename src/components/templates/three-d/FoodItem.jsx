@@ -10,7 +10,7 @@ import { easing } from "maath";
 const X_SPACING = 4.0;
 const VISIBLE_RANGE = 1;
 const RENDER_WINDOW = 2;
-const ITEM_SCALE_ACTIVE = 10;
+const ITEM_SCALE_ACTIVE = 11;
 const ITEM_SCALE_SIDE = 6;
 
 // --- GLOBAL CACHE TRACKER ---
@@ -72,7 +72,7 @@ function RealModel({ url, productTitle, onLoad }) {
 function PlaceholderMesh() {
   return (
     <mesh>
-      <sphereGeometry args={[0.1, 8, 8]} />
+      <sphereGeometry args={[0.05, 4, 4]} />
       <meshBasicMaterial color="#444" wireframe opacity={0.2} transparent />
     </mesh>
   );
