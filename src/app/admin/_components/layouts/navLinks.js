@@ -4,6 +4,7 @@ import {
   RiMailLine,
   RiNotification3Line,
   RiLayoutMasonryLine,
+  RiLayoutGridLine,
   RiSettings4Line,
   RiLogoutBoxRLine,
 } from "react-icons/ri";
@@ -36,7 +37,12 @@ export const NAV_LINKS = [
   //   icon: RiNotification3Line,
   // },
   {
-    name: "Templates", // New Item for Appearance/Templates
+    name: "Tables",
+    path: "/admin/tables",
+    icon: RiLayoutGridLine,
+  },
+  {
+    name: "Templates", 
     path: "/admin/templates",
     icon: RiLayoutMasonryLine,
   },
@@ -46,30 +52,3 @@ export const NAV_LINKS = [
     icon: RiSettings4Line,
   },
 ];
-
-// export const navLinks = [
-//   {
-//     name: "Dashboard",
-//     href: "/admin",
-//     icon: "HomeIcon",
-//     disabled: true
-//   },
-//   {
-//     name: "Menu Management",
-//     href: "/admin/dashboard",
-//     icon: "MenuIcon",
-//     disabled: false
-//   },
-//   {
-//     name: "Orders",
-//     href: "/admin/orders",
-//     icon: "OrderIcon",
-//     disabled: true
-//   },
-//   {
-//     name: "Settings",
-//     href: "/admin/settings",
-//     icon: "CogIcon",
-//     disabled: false
-//   },
-// ];

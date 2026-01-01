@@ -5,7 +5,7 @@ import ProductCard from "./ProductCard";
 import SlidePanel from "./SlidePanel";
 import ProductForm from "./ProductForm";
 import CategoryForm from "./CategoryForm";
-import { RiAddLine } from "react-icons/ri";
+import AddCard from "./AddCart";
 
 export default function ProductsView({
   categories,
@@ -83,17 +83,11 @@ export default function ProductsView({
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 pb-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-18 pt-3 pb-15">
           {/* Create New Product Button */}
-          <button
-            onClick={handleCreateClick}
-            className="group h-full min-h-[320px] w-full rounded-2xl border-2 mt-9 border-dashed border-gray-700 bg-dark-800/30 flex flex-col items-center justify-center gap-4 hover:bg-dark-800 hover:border-primary transition-all cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-full bg-gray-800 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-colors duration-300 shadow-lg">
-              <RiAddLine size={32} />
-            </div>
-            <span className="text-gray-400 group-hover:text-primary font-semibold transition-colors">
-              Add new dish
-            </span>
-          </button>
+          <AddCard 
+            onClick={handleCreateClick} 
+            label="Add new dish" 
+            className="mt-9 min-h-[320px] bg-dark-800/30 border-gray-700 hover:bg-dark-800"
+          />
 
           {/* Existing Products List */}
           {filteredProducts.map((product) => (

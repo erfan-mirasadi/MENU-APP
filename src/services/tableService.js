@@ -37,3 +37,29 @@ export async function getTables(restaurantId) {
 
   return data || [];
 }
+
+export async function createTable(tableData) {
+  const { data, error } = await supabase
+    .from("tables")
+    .insert([tableData])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating table:", error);
+    toast.error("Failed to create table");
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteTable(tableId) {
+  const { error } = await supabase.from("tables").delete().eq("id", tableId);
+
+  if (error) {
+    console.error("Error deleting table:", error);
+    toast.error("Failed to delete table");
+    throw error;
+  }
+}
