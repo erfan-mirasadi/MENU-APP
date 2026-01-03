@@ -17,7 +17,6 @@ import PosterImage from "./PosterImage";
 
 // --- SETTINGS ---
 const X_SPACING = 4.0;
-const VISIBLE_RANGE = 1;
 const RENDER_WINDOW = 2;
 const ITEM_SCALE_ACTIVE = 11;
 const ITEM_SCALE_SIDE = 6;
@@ -139,38 +138,6 @@ export default function FoodItem({
         easing.dampE(contentRef.current.rotation, [0, 0, 0], 0.5, delta);
       }
     }
-
-    // A. TRANSITION EFFECT (Smooth Dissolve)
-    // Logic: 
-    // - If Model NOT loaded: Opacity 1, Scale 1 (relative to 0.15 base)
-    // - If Model IS loaded: Opacity -> 0, Scale -> 1.5 (Dissolve out)
-    
-    if (posterRef.current) {
-        // We want to fade OUT if model is loaded
-        const targetOpacity = isModelLoaded ? 0 : 1;
-        const targetScaleObj = isModelLoaded ? 1.5 : 1; 
-
-        // Animate Opacity
-        // We access the child Image material indirectly or pass props, 
-        // BUT Drei Image updates on prop change. 
-        // For smooth per-frame animation, we need to manipulate the material directly if possible, or ref.
-        // However, PosterImage wraps Drei Image.
-        // Let's pass a ref or control simple uniform if possible.
-        // Or simpler: Standard damp on opacity prop? No, that causes re-renders.
-        // We will try to rely on Drei Image's internal handling or just prop updates if framerate allows.
-        // Actually, let's use the REF to the billboard/image group to scale it.
-        
-        const currentScale = posterRef.current.scale.x; 
-        // posterRef is a GROUP around the PosterImage
-        
-        easing.damp(posterRef.current.scale, "x", targetScaleObj, 0.25, delta);
-        easing.damp(posterRef.current.scale, "y", targetScaleObj, 0.25, delta);
-        easing.damp(posterRef.current.scale, "z", targetScaleObj, 0.25, delta);
-        
-        // For Opacity, we might need a custom approach if we want NO re-renders.
-        // But for now, let's assume `PosterImage` can take a dynamic opacity ref? 
-        // Or we just accept react re-renders for opacity.
-    }
   });
 
   // --- INTERACTION ---
@@ -198,12 +165,6 @@ export default function FoodItem({
 
   if (!product) return null;
   if (!isVisible) return null;
-
-  // We only fully unmount the poster if:
-  // 1. Model is Loaded AND
-  // 2. User is NOT interacting (so we don't break the drag) AND
-  // 3. (Optional) Transition is "done" (we can guess by time or state)
-  // To keep it simple: Keep poster mounted as long as interaction is active OR model not loaded.
   
   const showPoster = !isModelLoaded || isInteracting;
   
@@ -219,7 +180,7 @@ export default function FoodItem({
         polar={[-Math.PI / 4, Math.PI / 4]}
         azimuth={[-Infinity, Infinity]}
       >
-        <Float speed={isActive ? 1.5 : 0} rotationIntensity={isActive ? 0.2 : 0} floatIntensity={isActive ? 0.5 : 0}>
+        <Float speed={isActive ? 1.5 : 0} rotationIntensity={isActive ? 0.2 : 0} floatIntensity={0}>
           <group 
             ref={contentRef}
             onPointerDown={handlePointerDown}
@@ -237,46 +198,15 @@ export default function FoodItem({
               )}
             </Suspense>
 
-            {/* Poster Group with Ref for Animation */}
-            {/* We Render it if showPoster is true, OR if we need to animate it out... */}
-            {/* Actually, if we unmount it, we can't animate it out. */}
-            {/* So we should keep it mounted until opacity is effectively 0 AND !interacting */}
-            
             {(product.image_url) && (
                <group 
                  ref={posterRef} 
-                 visible={showPoster || !isModelLoaded} // Visibility toggle
+                 visible={showPoster || !isModelLoaded} 
                >
-                 {/* 
-                    We pass a prop to PosterImage to handle opacity locally or 
-                    we use the fact that it's unmounting?
-                    Wait, if I use `visible={false}`, it breaks raycast?
-                    YES. `visible=false` disables raycast.
-                    
-                    SO: We must keep `visible={true}` while `isInteracting` is true.
-                    
-                    Transition visual:
-                    We need to pass the opacity down. 
-                    Since we can't easily animate props in useFrame without re-renders, 
-                    we will use a simple CSS-like logic: 
-                    If isModelLoaded -> Opacity prop = 0.
-                    Drei Image will handle transition? No.
-                    
-                    Let's create a wrapper that applies opacity to children materials? 
-                    Too complex.
-                    
-                    Simpler: Just set opacity based on `isModelLoaded` and rely on React spring or CSS transition? 
-                    React Three Fiber doesn't have CSS transitions.
-                    
-                    Let's use `AnimatedPoster`? 
-                    
-                    Okay, we will pass `opacity={isModelLoaded ? 0 : 1}` 
-                    AND we need `PosterImage` to animate that change. 
-                 */}
-                 <PosterImage 
+                   <PosterImage 
                    url={product.image_url} 
                    opacity={isModelLoaded ? 0 : 1} 
-                   isTransitioning={isModelLoaded}
+                   isLoading={isTriggered && !isModelLoaded}
                  />
                </group>
             )}

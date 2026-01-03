@@ -26,10 +26,9 @@ const styles = `
   .animate-swipe {
     animation: swipeHint 2s infinite;
   }
-  /* --- انیمیشن جدید با دامنه حرکت بیشتر --- */
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-18px); } /* قبلا 8 بود الان 18 شد */
+    50% { transform: translateY(-18px); }
   }
   .animate-float {
     animation: float 4s ease-in-out infinite;

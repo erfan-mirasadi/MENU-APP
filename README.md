@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍽️ Next.js 3D Digital Menu
+# 🍽️ 3D Digital Menu
 
 **A high-performance, multi-template digital menu for restaurants featuring AR/3D visualization and real-time ordering.**
 
@@ -21,8 +21,8 @@
 
 This project redefines the dining experience with a focus on visual fidelity and performance.
 
-- 🎨 **Multi-Template Architecture:** Seamlessly switch between **Modern** (Dark/Neon) and **Classic** (Luxury/Paper) themes via database config.
-- 📦 **AR & 3D Integration:** Interactive 3D product models with Augmented Reality (AR) support using `@google/model-viewer`.
+- 🎨 **Multi-Template Architecture:** Seamlessly switch between **Modern**, **Classic**, and the new **Cinematic 3D** themes via database config.
+- 📦 **Immersive 3D & AR:** Interactive 360° product visualization with **Smart Blur Loading** (seamless poster-to-model transition) and fixed-scale Augmented Reality.
 - ⚡ **Real-time Cart & Ordering:** Instant order syncing using Supabase Realtime channels (Draft/Pending states).
 - 🎥 **Smart Media Engine:** Intelligent video handling that serves `.mov` (HEVC) to iOS and `.webm` to Android/Web for optimal performance.
 - 📱 **Responsive & Native-Like:** Smooth animations and gesture-based interactions tailored for mobile users.
@@ -39,7 +39,8 @@ src/
 │   ├── ui/                   # Global Shared Components (SmartMedia, ARViewer)
 │   └── templates/
 │       ├── modern/           # 🌑 Modern Theme (Grid Layout, Dark Mode)
-│       └── classic/          # 📜 Classic Theme (Row Layout, Serif Fonts)
+│       ├── classic/          # 📜 Classic Theme (Row Layout, Serif Fonts)
+│       └── three-d/          # 🧊 3D 360 Theme (R3F, Floating Items, Blur Loader)
 ├── hooks/                    # Custom Hooks (useCart, Realtime logic)
 └── lib/                      # Supabase Client & Utils
 ```

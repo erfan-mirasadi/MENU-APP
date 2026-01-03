@@ -11,7 +11,7 @@ export default function PosterImage({ url, opacity = 1 }) {
   const texture = useTexture(url); // This will suspend if not loaded, ensuring we have dimensions
   
   const aspect = texture.image.width / texture.image.height;
-  const BASE_HEIGHT = 0.14; // User liked this approximate size
+  const BASE_HEIGHT = 0.14; 
 
   useFrame((state, delta) => {
     if (ref.current && ref.current.material) {
@@ -26,9 +26,7 @@ export default function PosterImage({ url, opacity = 1 }) {
         ref={ref}
         url={url}
         transparent
-        // Start with current opacity state
         opacity={opacity} 
-        // Scale based on aspect ratio to prevent cropping
         scale={[BASE_HEIGHT * aspect, BASE_HEIGHT, 1]} 
         side={THREE.DoubleSide}
         toneMapped={false}
