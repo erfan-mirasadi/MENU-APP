@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Scene from "./Scene";
 import UIOverlay from "./UIOverlay";
 import HiddenARLauncher from "@/components/ui/HiddenARLauncher";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import { useParams } from "next/navigation";
 import { useCart } from "@/app/hooks/useCart";
 
@@ -73,7 +73,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
     }
   }, []);
 
-  // --- LOGIC: SMART PRELOADING ---
+  // --- LOGIC: SMART PRELOADING (IMAGES) ---
   useEffect(() => {
     if (!activeProducts.length) return;
     const priorityList = new Set([
@@ -82,13 +82,16 @@ export default function ThreeDLayout({ restaurant, categories }) {
       activeIndex,
       activeIndex + 1,
       activeIndex - 1,
+      activeIndex + 2, 
     ]);
 
     priorityList.forEach((idx) => {
+      // Handle cycling indices if needed, generally assume linear for now or bounds check
       if (idx >= 0 && idx < activeProducts.length) {
         const product = activeProducts[idx];
-        if (product?.model_url) {
-          useGLTF.preload(product.model_url);
+        if (product?.image_url) {
+          // Preload the texture so <Image /> doesn't suspend on mount
+          useTexture.preload(product.image_url);
         }
       }
     });

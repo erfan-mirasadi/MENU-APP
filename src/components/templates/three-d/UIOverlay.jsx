@@ -196,6 +196,7 @@ export default function UIOverlay({
                         width={56}
                         height={56}
                         className="w-full h-full object-cover"
+                        priority={true} 
                       />
                     ) : (
                       <span className="text-lg text-white">●</span>

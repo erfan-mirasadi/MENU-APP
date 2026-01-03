@@ -12,7 +12,6 @@ const nextConfig = {
   },
 
   transpilePackages: [
-    "three",
     "@react-three/drei",
     "@react-three/fiber",
     "three-stdlib",
