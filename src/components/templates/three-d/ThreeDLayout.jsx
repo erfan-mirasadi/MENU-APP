@@ -22,10 +22,11 @@ export default function ThreeDLayout({ restaurant, categories }) {
     isLoading: isLoadingCart,
   } = useCart(params?.table_id);
 
+  // --- STATE ---
   const [activeCatId, setActiveCatId] = useState(categories[0]?.id);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [arRefUrl, setArRefUrl] = useState(null);
+  const [currentBlobUrl, setCurrentBlobUrl] = useState(null); // Local blob URL from FoodItem
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
@@ -46,18 +47,20 @@ export default function ThreeDLayout({ restaurant, categories }) {
     }
   }, [activeCatId, categories]);
 
-  const handleModelLoaded = useCallback(() => {
+  const handleModelLoaded = useCallback((url) => {
     setIsLoading(false);
+    if (url) setCurrentBlobUrl(url);
   }, []);
 
   const arLauncherRef = useRef();
   
   const handleLaunchAR = useCallback(() => {
-    // Just set the URL. The component will lazy load lib + activate.
-    if (focusedProduct?.model_url) {
-      setArRefUrl(focusedProduct.model_url);
+    // Direct trigger for headless AR
+    const urlToUse = currentBlobUrl || focusedProduct?.model_url;
+    if (arLauncherRef.current && urlToUse) {
+        arLauncherRef.current.launchAR(urlToUse);
     }
-  }, [focusedProduct]);
+  }, [currentBlobUrl, focusedProduct]);
 
   // --- LOGIC: GYROSCOPE ---
   useEffect(() => {
@@ -177,9 +180,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
       />
 
       <HiddenARLauncher 
-        onRef={(el) => (arLauncherRef.current = el)} 
-        activeModelUrl={arRefUrl}
-        onClose={() => setArRefUrl(null)}
+        ref={arLauncherRef} 
       />
 
       <UIOverlay
