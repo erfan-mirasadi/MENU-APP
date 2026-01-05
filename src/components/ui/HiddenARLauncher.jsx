@@ -7,7 +7,7 @@ export default function HiddenARLauncher({ activeModelUrl, onRef, onClose }) {
   const [isReady, setIsReady] = useState(false);
   const internalRef = useRef(null);
 
-  // 1. Lazy Load Library & Configure Decoders ONLY when URL is provided
+  // 1. Lazy Load Library ONLY (Configuration handled by attributes)
   useEffect(() => {
     if (!activeModelUrl) {
       setIsReady(false);
@@ -23,6 +23,7 @@ export default function HiddenARLauncher({ activeModelUrl, onRef, onClose }) {
           ModelViewerClass = module.ModelViewerElement;
         }
 
+        // Restore imperative config to ensure loader has access to decoder immediately
         if (ModelViewerClass) {
           ModelViewerClass.meshoptDecoderLocation =
             "/libs/meshopt/meshopt_decoder.js";
@@ -76,11 +77,12 @@ export default function HiddenARLauncher({ activeModelUrl, onRef, onClose }) {
                      });
                    }
                 }}
-                src={isReady ? activeModelUrl : undefined}
+                src={activeModelUrl}
                 ar
                 ar-modes="webxr scene-viewer quick-look"
                 ar-scale="auto"
                 ar-placement="floor"
+                shadow-intensity="1"
                 camera-controls
                 auto-rotate
                 loading="eager"
