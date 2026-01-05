@@ -69,10 +69,18 @@ export default function HiddenARLauncher({ activeModelUrl, onRef, onClose }) {
                 ref={(el) => {
                    internalRef.current = el;
                    if (onRef) onRef(el);
+                   // Add error listener for debugging AR issues
+                   if (el) {
+                     el.addEventListener('error', (e) => {
+                       console.error("AR/Model Error:", e.detail);
+                     });
+                   }
                 }}
-                src={activeModelUrl}
+                src={isReady ? activeModelUrl : undefined}
                 ar
                 ar-modes="webxr scene-viewer quick-look"
+                ar-scale="auto"
+                ar-placement="floor"
                 camera-controls
                 auto-rotate
                 loading="eager"
