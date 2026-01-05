@@ -170,7 +170,7 @@ export default function UIOverlay({
       <div className="absolute bottom-0 left-0 w-full z-50 pb-8 pointer-events-none">
         <div className="category-scroll w-full overflow-x-auto no-scrollbar px-4 pointer-events-auto">
           <div className="flex gap-6 min-w-max pt-4">
-            {categories.map((cat) => {
+            {categories.map((cat, index) => {
               const isActive = activeCatId === cat.id;
               return (
                 <button
@@ -196,6 +196,7 @@ export default function UIOverlay({
                         width={56}
                         height={56}
                         className="w-full h-full object-cover"
+                        priority={index < 4}
                       />
                     ) : (
                       <span className="text-lg text-white">●</span>

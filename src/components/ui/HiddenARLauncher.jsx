@@ -1,52 +1,78 @@
 "use client";
 
-import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from "react";
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 
 const HiddenARLauncher = forwardRef(({ activeModelUrl }, ref) => {
   const modelViewerRef = useRef(null);
+  const [isARActive, setIsARActive] = useState(false);
 
-  // Load model-viewer script if not already available
-  useEffect(() => {
-    const isDefined = customElements.get("model-viewer");
-    if (!isDefined) {
-      import("@google/model-viewer").catch((err) => {
-        if (!err.message.includes("already been used")) {
-          console.error("Failed to load model-viewer:", err);
-        }
-      });
-    }
-  }, []);
-
-  // Expose launch method to parent
   useImperativeHandle(ref, () => ({
-    launchAR: () => {
-        const viewer = modelViewerRef.current;
-        if (viewer && viewer.activateAR) {
-            viewer.activateAR();
-        } else {
-            console.warn("AR not supported or model-viewer not ready");
+    launchAR: async () => {
+      // 1. Load Library & Configure Decoders
+      // We do this BEFORE setting active state to ensure the <model-viewer>
+      // element is upgraded with the correct configuration immediately upon mounting.
+      try {
+        let ModelViewerClass = customElements.get("model-viewer");
+        
+        if (!ModelViewerClass) {
+          const module = await import("@google/model-viewer");
+          ModelViewerClass = module.ModelViewerElement;
         }
+
+        // ✅ Config Global Decoders (Idempotent safe)
+        if (ModelViewerClass) {
+          ModelViewerClass.meshoptDecoderLocation = "/libs/meshopt/meshopt_decoder.js";
+          ModelViewerClass.ktx2TranscoderLocation = "/libs/basis/";
+        }
+      } catch (err) {
+        console.error("Failed to load/configure model-viewer:", err);
+        return;
+      }
+
+      // 2. Activate Component (Render)
+      setIsARActive(true);
+
+      // 3. Wait for DOM update & Custom Element upgrade
+      setTimeout(() => {
+        const viewer = modelViewerRef.current;
+        if (viewer?.activateAR) {
+          viewer.activateAR();
+        } else {
+          console.warn("AR launcher ready but activateAR not available yet.");
+        }
+      }, 100);
     }
   }));
 
-  if (!activeModelUrl) return null;
+  // Log errors only when active
+  useEffect(() => {
+    if (!isARActive) return;
+    
+    const viewer = modelViewerRef.current;
+    if (!viewer) return;
+
+    const handleError = (e) => {
+      console.error("🔴 AR Error:", e.detail);
+    };
+
+    viewer.addEventListener("error", handleError);
+    return () => viewer.removeEventListener("error", handleError);
+  }, [isARActive]);
+
+  if (!activeModelUrl || !isARActive) return null;
 
   return (
     <div style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-      {/* @ts-ignore */}
       <model-viewer
         ref={modelViewerRef}
         src={activeModelUrl}
         ar
         ar-modes="webxr scene-viewer quick-look"
-        ar-scale="fixed"
-        ar-placement="floor"
         camera-controls
         auto-rotate
         loading="eager" 
+        meshopt-decoder-path="/libs/meshopt/meshopt_decoder.module.js"
         ktx2-transcoder-path="/libs/basis/"
-        draco-decoder-path="https://www.gstatic.com/draco/v1/decoders/"
-        meshopt-decoder-path="https://unpkg.com/meshoptimizer@0.19.0/meshopt_decoder.js"
       >
       </model-viewer>
     </div>
