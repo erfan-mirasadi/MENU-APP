@@ -4,6 +4,96 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 
+import { useDrag } from "@use-gesture/react";
+import { MdDeleteOutline, MdAdd, MdRemove } from "react-icons/md";
+
+function SwipeableItem({ item, onRemove, t, content }) {
+  const [x, setX] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  // Threshold increased to roughly 80% of width (assuming ~350px width -> -280)
+  const threshold = -250; 
+
+  const bind = useDrag(
+    ({ movement: [mx], down, cancel }) => {
+      if (isDeleting) return;
+      
+      // Allow swipe up to -310px
+      const newX = Math.min(0, Math.max(-310, mx));
+      
+      if (down) {
+        setX(newX);
+      } else {
+        if (mx < threshold) {
+          // Trigger delete
+          setIsDeleting(true);
+          setX(-400); 
+          setTimeout(() => onRemove(item.id), 300);
+        } else {
+          // Snap back
+          setX(0);
+        }
+      }
+    },
+    { axis: "x", filterTaps: true }
+  );
+
+  if (isDeleting) return null;
+
+  return (
+    <div className="relative group touch-pan-y select-none mb-3">
+      {/* BACKGROUND (DELETE ACTION) - PEEKING */}
+      <div className="absolute inset-y-1 right-0 w-full bg-red-500/20 rounded-2xl flex items-center justify-end pr-4 overflow-hidden border border-red-500/30 z-0">
+         <div className="flex flex-col items-center justify-center text-red-500 gap-1 animate-pulse scale-125 origin-right">
+           <MdDeleteOutline size={28} />
+           <span className="text-[10px] font-bold uppercase tracking-wider">{t("remove")}</span>
+        </div>
+      </div>
+
+      {/* FOREGROUND (CARD) */}
+      <div
+        {...bind()}
+        style={{ transform: `translateX(${x}px)`, touchAction: "pan-y" }}
+        className="relative flex items-center gap-3 bg-[#252836] backdrop-blur-xl p-3 rounded-2xl border border-white/5 z-10 transition-transform duration-100 ease-out active:cursor-grabbing cursor-grab shadow-lg mr-2 " 
+      >
+        
+        {/* Image - No Frame, Larger */}
+        <div className="relative w-22 h-22 rounded-2xl overflow-hidden shrink-0 pointer-events-none shadow-md">
+          <Image
+            src={item.product?.image_url}
+            alt={content(item.product?.title)}
+            fill
+            className="object-cover"
+          />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 pointer-events-none pr-2">
+          <h4 className="text-white font-black text-md truncate leading-tight">
+            {content(item.product?.title)}
+          </h4>
+          <p className="text-[#ea7c69] text-md font-bold mt-1">
+            {Number(item.unit_price_at_order).toLocaleString()}{" "}
+            {t("currency")}
+          </p>
+        </div>
+
+        {/* Actions (Static Quantity - Premium Pill Style) */}
+        <div className="shrink-0 pointer-events-none flex flex-col items-center justify-center pl-3">
+          <div className="flex items-baseline gap-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl px-2 py-1 shadow-md">
+             <span className="text-sm text-[#ea7c69] font-bold">x</span>
+             <span className="text-white/90 font-mono font-black text-xl leading-none tracking-tighter">
+              {item.quantity}
+             </span>
+          </div>
+        </div>
+        
+        {/* Red Peek Indicator Strip (Visual Cue) */}
+        <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-red-500/50 rounded-l-md pointer-events-none" />
+      </div>
+    </div>
+  );
+}
+
 export default function ModernCartDrawer({
   isOpen,
   onClose,
@@ -19,15 +109,14 @@ export default function ModernCartDrawer({
     if (isOpen) {
       document.body.style.overflow = "hidden";
       setShouldRender(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
+      }, 50);
+      return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = "";
       setIsAnimating(false);
-      // صبر برای اتمام انیمیشن قبل از unmount
+      // Wait for animation to finish
       const timer = setTimeout(() => {
         setShouldRender(false);
       }, 500);
@@ -41,7 +130,7 @@ export default function ModernCartDrawer({
 
   if (!shouldRender) return null;
 
-  // جدا کردن آیتم‌های جدید (Draft) از آیتم‌های قبلی (Pending)
+  // Separate Items
   const draftItems = cartItems.filter((item) => item.status === "draft");
   const orderedItems = cartItems.filter((item) => item.status !== "draft");
 
@@ -55,14 +144,14 @@ export default function ModernCartDrawer({
       {/* Backdrop (Back click closes) */}
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-500 ${
-          isOpen ? "opacity-100" : "opacity-0"
+        className={`absolute inset-0 backdrop-blur-sm bg-black/20 transition-opacity duration-500 ${
+          isAnimating ? "opacity-100" : "opacity-0"
         }`}
       ></div>
 
       {/* Drawer Panel */}
       <div
-        className={`relative w-full max-w-md bg-[#1F1D2B] rounded-t-[40px] sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] transition-transform duration-500 ease-out ${
+        className={`relative w-full max-w-md bg-[#1F1D2B]/70 backdrop-blur-sm rounded-t-[40px] sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] transition-transform duration-500 ease-out ${
           isAnimating ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -93,7 +182,7 @@ export default function ModernCartDrawer({
             </div>
           ) : (
             <>
-              {/* SECTION 1: DRAFT ITEMS (New) */}
+              {/* SECTION 1: DRAFT ITEMS (Swipeable) */}
               {draftItems.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
@@ -104,47 +193,21 @@ export default function ModernCartDrawer({
                   </div>
 
                   {draftItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-4 bg-[#252836] p-3 rounded-2xl border border-white/5 relative overflow-hidden group"
-                    >
-                      {/* Image */}
-                      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-black/20 shrink-0">
-                        <Image
-                          src={item.product?.image_url}
-                          alt={content(item.product?.title)}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-bold text-sm truncate">
-                          {content(item.product?.title)}
-                        </h4>
-                        <p className="text-[#ea7c69] text-xs font-bold mt-1">
-                          {Number(item.unit_price_at_order).toLocaleString()}{" "}
-                          {t("currency")}
-                        </p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="bg-white/10 px-2 py-1 rounded-md text-xs font-mono text-white">
-                          x{item.quantity}
-                        </span>
-
-                        {/* Remove Button */}
-                        <button
-                          onClick={() => onRemove(item.id)}
-                          className="text-red-400 text-[10px] hover:text-red-200 underline decoration-red-400/30"
-                        >
-                          {t("remove")}
-                        </button>
-                      </div>
-                    </div>
+                    <SwipeableItem 
+                      key={item.id} 
+                      item={item} 
+                      onRemove={onRemove}
+                      t={t} 
+                      content={content} 
+                    />
                   ))}
+                  
+                  {/* Hint Text */}
+                  <div className="text-center">
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest">
+                       ← {t("swipeToDelete")}
+                    </p>
+                  </div>
                 </div>
               )}
 

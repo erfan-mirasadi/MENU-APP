@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useProgress } from "@react-three/drei";
 import Image from "next/image";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import { useLanguage } from "@/context/LanguageContext";
-import { MdViewInAr } from "react-icons/md";
+import { MdViewInAr, MdTouchApp } from "react-icons/md";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import Loader from "@/components/ui/Loader";
 
@@ -13,55 +13,28 @@ import CartControls from "./CartControls";
 import ModernCartDrawer from "../modern/ModernCartDrawer";
 
 const styles = `
-  @keyframes blurFadeIn {
-    0% { opacity: 0; filter: blur(10px); transform: translateY(10px); }
-    100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+  @keyframes handSwipe {
+    0% { transform: translateX(10px) rotate(15deg) scale(0.8); opacity: 0; }
+    15% { transform: translateX(10px) rotate(15deg) scale(1); opacity: 1; }
+    85% { transform: translateX(-25px) rotate(15deg) scale(1); opacity: 1; }
+    100% { transform: translateX(-35px) rotate(15deg) scale(0.8); opacity: 0; }
   }
-  .animate-text-change {
-    animation: blurFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  }
-  @keyframes swipeHint {
-    0% { transform: translateX(20px); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateX(-20px); opacity: 0; }
-  }
-  .animate-swipe {
-    animation: swipeHint 2s infinite;
-  }
-  /* --- انیمیشن جدید با دامنه حرکت بیشتر --- */
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-18px); } 
-  }
-  .animate-float {
-    animation: float 4s ease-in-out infinite;
+  .animate-hand-swipe {
+    animation: handSwipe 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
 `;
 
 function SwipeHint() {
-  const { t } = useLanguage();
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 4000);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!visible) return null;
-
   return (
     <div
-      className="absolute bottom-32 left-0 w-full flex justify-center items-center pointer-events-none z-40 transition-opacity duration-1000"
-      style={{ opacity: visible ? 1 : 0 }}
+      className="absolute bottom-56 left-0 w-full flex justify-center items-center pointer-events-none z-40 animate-in fade-in zoom-in duration-1000"
     >
-      <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-3 border border-white/10">
-        <div className="w-6 h-6 flex items-center justify-center">
-          <div className="w-2 h-2 bg-white rounded-full animate-swipe"></div>
-          <div className="w-2 h-2 bg-white/50 rounded-full animate-swipe delay-75 ml-1"></div>
-          <div className="w-2 h-2 bg-white/20 rounded-full animate-swipe delay-150 ml-1"></div>
-        </div>
-        <span className="text-[10px] text-white/80 uppercase tracking-widest font-bold">
-          Swipe
-        </span>
+      <div className="relative flex items-center justify-center">
+         {/* Touch Ripple Effect */}
+         <div className="absolute top-2 left-2 w-8 h-8 bg-white/30 rounded-full animate-ping" />
+         
+         {/* Hand Icon - Larger & Shadowed */}
+         <MdTouchApp size={56} className="text-white/90 animate-hand-swipe drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)] filter" />
       </div>
     </div>
   );
@@ -86,26 +59,50 @@ export default function UIOverlay({
   activeIndex,
   setActiveIndex,
   productCount,
+  // State lifted from ThreeDLayout
+  isCartOpen,
+  setIsCartOpen,
 }) {
   const { content, t } = useLanguage();
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const { active } = useProgress();
+  const [showHint, setShowHint] = useState(false);
+  const hasShownRef = useRef(false);
+
+  useEffect(() => {
+    // If loading, or already shown, do nothing
+    if (active || hasShownRef.current) return;
+
+    // Start timer to show hint after 1s of stable "loaded" state
+    const timer = setTimeout(() => {
+      hasShownRef.current = true;
+      setShowHint(true);
+      
+      // Auto-hide after 3s
+      setTimeout(() => setShowHint(false), 3000);
+    }, 1000);
+
+    // Cleanup: If 'active' changes (e.g. becomes true) or unmount, clear timer
+    return () => clearTimeout(timer);
+  }, [active]);
 
   return (
     <>
       <style>{styles}</style>
       <Loader active={active} />
-      <SwipeHint />
+      {/* Run only when loading finishes (!active) and cart is closed */}
+      {!isCartOpen && !active && showHint && <SwipeHint />}
 
-      {/* --- CONTROLS --- */}
-      <CartControls
-        focusedProduct={focusedProduct}
-        cartItems={cartItems || []}
-        onAdd={addToCart}
-        onDecrease={decreaseFromCart}
-        onRemove={removeFromCart}
-        onOpenCart={() => setIsCartOpen(true)}
-      />
+      {/* --- CONTROLS (Hidden when cart is open) --- */}
+      <div className={`transition-opacity duration-300 ${isCartOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+        <CartControls
+          focusedProduct={focusedProduct}
+          cartItems={cartItems || []}
+          onAdd={addToCart}
+          onDecrease={decreaseFromCart}
+          onRemove={removeFromCart}
+          onOpenCart={() => setIsCartOpen(true)}
+        />
+      </div>
 
       {/* --- DRAWER --- */}
       <ModernCartDrawer
@@ -117,33 +114,33 @@ export default function UIOverlay({
       />
 
       {/* --- LIQUID GLASS NAVIGATION ARROWS (CENTERED) --- */}
-      {activeIndex > 0 && (
+      {!isCartOpen && activeIndex > 0 && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             setActiveIndex((prev) => prev - 1);
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full backdrop-blur-md border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-white active:scale-90 transition-all duration-300 group overflow-hidden"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 z-40 p-2.5 rounded-full backdrop-blur-md border border-white/14 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-white active:scale-90 transition-all duration-300 group overflow-hidden"
           aria-label="Previous Item"
         >
           {/* Liquid Gloss Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-60 pointer-events-none rounded-full" />
-          <IoChevronBack size={24} className="relative z-10 drop-shadow-md" />
+          <div className="absolute inset-0.5 bg-gradient-to-tr from-white/20 to-transparent opacity-50 pointer-events-none rounded-full" />
+          <IoChevronBack size={22} className="relative z-10 drop-shadow-md text-white/60" />
         </button>
       )}
 
-      {activeIndex < productCount - 1 && (
+      {!isCartOpen && activeIndex < productCount - 1 && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             setActiveIndex((prev) => prev + 1);
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full backdrop-blur-md border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-white active:scale-80 transition-all duration-300 group overflow-hidden"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 z-40 p-2.5 rounded-full backdrop-blur-md border border-white/14 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-white active:scale-80 transition-all duration-300 group overflow-hidden"
           aria-label="Next Item"
         >
           {/* Liquid Gloss Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-50 pointer-events-none rounded-full" />
-          <IoChevronForward size={24} className="relative z-10 drop-shadow-md" />
+          <div className="absolute inset-0.5 bg-gradient-to-tr from-white/20 to-transparent opacity-50 pointer-events-none rounded-full" />
+          <IoChevronForward size={22} className="relative z-10 drop-shadow-md text-white/60" />
         </button>
       )}
 
@@ -277,39 +274,91 @@ export default function UIOverlay({
       </div>
 
       {/* --- BOTTOM CATEGORY NAV --- */}
-      {/* --- BOTTOM CATEGORY NAV (APPLE LIQUID GLASS) --- */}
-      <div className="absolute bottom-2 left-0 w-full z-50 pointer-events-none px-2">
+      <div className="absolute bottom-0 left-0 w-full z-50 pointer-events-none px-0">
         
         {/* Floating Glass Dock Container */}
-        <div className="relative mx-auto max-w-2xl category-scroll backdrop-blur-sm border border-white/10 rounded-[35px] shadow-2xl overflow-hidden pointer-events-auto">
+        <div className="relative mx-auto max-w-2xl backdrop-blur-sm border-t border-white/10 rounded-t-[35px] shadow-2xl overflow-hidden pointer-events-auto bg-black/20 group/nav">
           
           {/* Header Label - Integrated */}
           <div className="absolute top-0 left-0 w-full text-center py-1 z-10">
-            <span className="text-white/50 text-[10px] font-semibold tracking-[0.2em] uppercase">
+            <span className="text-white/50 text-[9px] font-semibold tracking-[0.2em] uppercase">
               {t('menuCategories')}
             </span>
           </div>
 
+          {/* Logic for Arrows */}
+          {(() => {
+             const scrollRef = useRef(null);
+             const [showLeft, setShowLeft] = useState(false);
+             const [showRight, setShowRight] = useState(true);
 
+             const checkScroll = () => {
+               if (!scrollRef.current) return;
+               const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+               setShowLeft(scrollLeft > 10);
+               setShowRight(scrollLeft < scrollWidth - clientWidth - 10);
+             };
 
-          {/* Scroll Container */}
-          <div className="category-scroll w-full overflow-x-auto no-scrollbar px-6 pt-10 pb-4 touch-pan-x">
-            <div className="flex gap-5 min-w-max items-start justify-center mx-auto">
+             useEffect(() => {
+               checkScroll();
+               window.addEventListener('resize', checkScroll);
+               return () => window.removeEventListener('resize', checkScroll);
+             }, []);
+
+             const scroll = (direction) => {
+               if (scrollRef.current) {
+                 scrollRef.current.scrollBy({ left: direction * 300, behavior: 'smooth' });
+               }
+             };
+
+             return (
+               <>
+                 {/* Left Arrow */}
+                 <div className={`absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center z-20 transition-opacity duration-300 ${showLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                   <button 
+                     onClick={() => scroll(-1)}
+                     className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white/70 transition-all active:scale-90"
+                   >
+                     <IoChevronBack size={18} />
+                   </button>
+                   {/* Gradient Mask */}
+                   <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/20 to-transparent -z-10 pointer-events-none" />
+                 </div>
+
+                 {/* Right Arrow */}
+                 <div className={`absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center z-20 transition-opacity duration-300 ${showRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                   <button 
+                     onClick={() => scroll(1)}
+                     className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white/70  transition-all active:scale-90"
+                   >
+                     <IoChevronForward size={18} />
+                   </button>
+                   {/* Gradient Mask */}
+                   <div className="absolute inset-y-0 right-0 w-full bg-gradient-to-l from-black/20 to-transparent -z-10 pointer-events-none" />
+                 </div>
+
+                 {/* Scroll Container */}
+                 <div 
+                   ref={scrollRef}
+                   onScroll={checkScroll}
+                   className="category-scroll w-full overflow-x-auto no-scrollbar px-6 pt-9 pb-1 touch-pan-x scroll-smooth"
+                 >
+                   <div className="flex gap-5 min-w-max items-start justify-center mx-auto">
               {categories.map((cat, index) => {
                 const isActive = activeCatId === cat.id;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setActiveCatId(cat.id)}
-                    className={`group flex flex-col items-center gap-3 transition-all duration-300 ease-out active:scale-95 w-[5.5rem] ${
+                    className={`group flex flex-col items-center gap-2.5 transition-all duration-300 ease-out active:scale-95 w-[6.5rem] ${
                       isActive ? "opacity-100" : "opacity-60 hover:opacity-100"
                     }`}
                   >
-                    {/* Liquid Glass Icon */}
+                    {/* Liquid Glass Icon - Rectangular (Medium) */}
                     <div
-                      className={`relative w-[4.5rem] h-[4.5rem] rounded-[22px] overflow-hidden transition-all duration-500 shrink-0 ${
+                      className={`relative w-[6rem] h-[4rem] rounded-[20px] overflow-hidden transition-all duration-500 shrink-0 ${
                         isActive
-                          ? "shadow-[0_8px_30px_rgba(234,124,105,0.5)] ring-1 ring-white/50 scale-110"
+                          ? "shadow-[0_6px_25px_rgba(234,124,105,0.45)] ring-1 ring-white/50 scale-105"
                           : "ring-1 ring-white/10 grayscale-[0.3]"
                       }`}
                     >
@@ -321,8 +370,8 @@ export default function UIOverlay({
                         <Image
                           src={cat.image_url}
                           alt={content(cat.title)}
-                          width={72}
-                          height={72}
+                          width={96}
+                          height={64}
                           className="w-full h-full object-cover"
                           priority={index < 4}
                         />
@@ -349,8 +398,11 @@ export default function UIOverlay({
                   </button>
                 );
               })}
-            </div>
-          </div>
+                   </div>
+                 </div>
+               </>
+             );
+          })()}
         </div>
       </div>
     </>

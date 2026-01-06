@@ -28,6 +28,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [currentBlobUrl, setCurrentBlobUrl] = useState(null); // Local blob URL from FoodItem
+  const [isCartOpen, setIsCartOpen] = useState(false); // Helper state for preventing interactions
 
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
@@ -111,6 +112,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
 
   // --- LOGIC: TOUCH GESTURES ---
   const handleTouchStart = useCallback((e) => {
+    if (isCartOpen) return; // Block swipe when cart is open
     if (e.target.closest(".category-scroll")) return;
     const touch = e.touches[0];
     touchStartRef.current = {
@@ -118,10 +120,11 @@ export default function ThreeDLayout({ restaurant, categories }) {
       y: touch.clientY,
       time: Date.now(),
     };
-  }, []);
+  }, [isCartOpen]);
 
   const handleTouchEnd = useCallback(
     (e) => {
+      if (isCartOpen) return; // Block swipe when cart is open
       if (!touchStartRef.current || touchStartRef.current.time === 0) return;
       const touch = e.changedTouches[0];
       const deltaX = touch.clientX - touchStartRef.current.x;
@@ -139,8 +142,28 @@ export default function ThreeDLayout({ restaurant, categories }) {
       }
       touchStartRef.current = { x: 0, y: 0, time: 0 };
     },
-    [activeIndex, activeProducts.length]
+    [activeIndex, activeProducts.length, isCartOpen]
   );
+
+  // --- LOGIC: LOCK SCROLL ---
+  useEffect(() => {
+    // Save original styles
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyTouchAction = document.body.style.touchAction;
+
+    // Apply strict locking
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none"; // Disables browser gestures like pull-to-refresh
+
+    return () => {
+      // Restore original styles
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalBodyTouchAction;
+    };
+  }, []);
 
 
 
@@ -152,6 +175,8 @@ export default function ThreeDLayout({ restaurant, categories }) {
     >
       {/* --- CUSTOM SMOOTH LOADER --- */}
       <Loader active={isLoading} />
+
+
 
       <Scene
         activeProducts={activeProducts}
@@ -182,6 +207,9 @@ export default function ThreeDLayout({ restaurant, categories }) {
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
         productCount={activeProducts.length}
+        /* --- CART STATE --- */
+        isCartOpen={isCartOpen}
+        setIsCartOpen={setIsCartOpen}
       />
     </div>
   );
