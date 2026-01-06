@@ -114,5 +114,5 @@ export const useCashierData = () => {
     };
   }, [fetchData]);
 
-  return { tables, sessions, loading };
+  return { tables, sessions, loading, restaurantId: tables[0]?.restaurant_id };
 };

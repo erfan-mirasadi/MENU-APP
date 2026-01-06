@@ -1,11 +1,12 @@
 'use client'
 import { Canvas } from '@react-three/fiber'
-import { MapControls, OrthographicCamera, Text, Environment, TransformControls } from '@react-three/drei'
+import { MapControls, OrthographicCamera, Text, Environment, TransformControls, useCursor } from '@react-three/drei'
 import { useState, useEffect } from 'react'
 import * as THREE from 'three'
 
-function TableBox({ id, position, width = 1.2, depth = 1.2, tableNumber, status, isEditing, onSelect, isSelected }) {
+function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status, isEditing, onSelect, isSelected }) {
   const [hovered, setHovered] = useState(false)
+  useCursor(hovered, 'pointer', 'auto')
   
   // Logic for color: Orange for occupied, Green for payment, White for free
   let baseColor = '#ffffff'
@@ -37,11 +38,16 @@ function TableBox({ id, position, width = 1.2, depth = 1.2, tableNumber, status,
         
         {/* Table Number Text */}
         <Text
-          position={[0, 1, 0]}
-          fontSize={Math.min(width, depth) * 0.4} // Scale font with table
-          color="black"
+          position={[0, 0.41, 0]} 
+          rotation={[-Math.PI / 2, 0, 0]} 
+          fontSize={Math.min(width, depth) * 0.35} 
+          maxWidth={width * 0.8} 
+          font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff"
+          color="#1f2937" 
           anchorX="center"
           anchorY="middle"
+          fillOpacity={0.9}
+          letterSpacing={-0.05}
         >
           {tableNumber}
         </Text>

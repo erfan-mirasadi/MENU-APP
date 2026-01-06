@@ -6,15 +6,15 @@ import TableEditor from '../_components/TableEditor'
 import { calculateDefaultLayout } from '../_utils/layoutUtils'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
-import { RiEdit2Line, RiSave3Line, RiCloseLine, RiRestartLine, RiDragMove2Line, RiShapeLine } from 'react-icons/ri'
+import { RiEdit2Line, RiSave3Line, RiCloseLine, RiRestartLine, RiDragMove2Line, RiShapeLine, RiAddLine } from 'react-icons/ri'
 
 export default function DashboardPage() {
-  const { tables, sessions, loading } = useCashierData()
+  const { tables, sessions, loading, restaurantId } = useCashierData()
   const [isEditing, setIsEditing] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState(null)
   
-  // 'translate' | 'scale'
-  const [editMode, setEditMode] = useState('translate')
+  // 'translate' | 'scale' - No longer needed
+  // const [editMode, setEditMode] = useState('translate')
   
   // Local state for layout changes
   // We need to keep track of FULL table objects now, because they might have new Width/Depth
@@ -28,8 +28,8 @@ export default function DashboardPage() {
          ...table,
          status: activeSession ? activeSession.status : 'free',
          // Ensure defaults
-         width: table.layout_data?.width || 1.2,
-         depth: table.layout_data?.depth || 1.2,
+         width: table.layout_data?.width || 2.2,
+         depth: table.layout_data?.depth || 2.2,
          x: table.layout_data?.x || 0, // Fallback, will be fixed by grid calc if needed
          y: table.layout_data?.y || 0
        };
@@ -73,6 +73,116 @@ export default function DashboardPage() {
       }
   }
 
+  const handleAddTable = async () => {
+      // 1. Calculate new Table Number (Smart Parsing)
+      let maxNum = 0
+      localTables.forEach(t => {
+          // Try to match "T-XX" or just numbers
+          const match = t.table_number.toString().match(/(\d+)$/)
+          if (match) {
+              const num = parseInt(match[1], 10)
+              if (num > maxNum) maxNum = num
+          }
+      })
+      const nextNum = maxNum + 1
+      // If previous pattern was "T-XX", follow it? Or just simplify to number?
+      // User requested "bbine akharin esme chi boode" (see what last name was).
+      // Simple heuristic: if most tables start with "T-", use "T-".
+      const usePrefix = localTables.length > 0 && localTables.some(t => t.table_number.toString().startsWith('T-'))
+      const nextTableNumber = usePrefix ? `T-${String(nextNum).padStart(2, '0')}` : nextNum.toString()
+      
+      // If no tables exist, default to T-01
+      const finalTableNumber = localTables.length === 0 ? "T-01" : nextTableNumber
+      
+      // 2. Generate QR Token
+      const qrToken = `token-${finalTableNumber.toLowerCase()}-${Date.now().toString(36)}`
+
+      // 3. Find a "safe" position (Collision Detection)
+      // Check positions in a grid pattern until free
+      const GRID_STEP = 25 // Slightly larger step for larger tables
+      let foundX = 0
+      let foundY = 0
+      let found = false
+      
+      // Search a reasonable grid area (e.g., 10x10)
+      for (let row = 0; row < 10; row++) {
+          for (let col = 0; col < 10; col++) {
+             const testX = col * GRID_STEP
+             const testY = row * GRID_STEP
+             
+             // Check collision with ANY existing table
+             // Collision radius = ~2.5 (safe margin for 2.2 size)
+             const hasCollision = localTables.some(t => {
+                 const dx = Math.abs(t.x - testX)
+                 const dy = Math.abs(t.y - testY)
+                 return dx < 22 && dy < 22 // 2.2 units * 10
+             })
+             
+             if (!hasCollision) {
+                 foundX = testX
+                 foundY = testY
+                 found = true
+                 break
+             }
+          }
+          if (found) break
+      }
+      
+      // Fallback if full grid is full (unlikely) -> just far right
+      if (!found) {
+          const rightMost = localTables.reduce((max, t) => Math.max(max, t.x), 0)
+          foundX = rightMost + 30
+      }
+
+      // 4. Optimistic Update
+      const tempId = `temp-${Date.now()}`
+      const newTable = {
+          id: tempId,
+          table_number: finalTableNumber,
+          x: foundX,
+          y: foundY,
+          width: 2.2,
+          depth: 2.2,
+          status: 'free',
+          restaurant_id: restaurantId,
+          qr_token: qrToken
+      }
+      
+      setLocalTables([...localTables, newTable])
+      
+      // 5. Actual Insert
+      try {
+           if (!restaurantId) throw new Error("Missing Restaurant ID")
+           
+           const { data, error } = await supabase
+            .from('tables')
+            .insert({
+                restaurant_id: restaurantId,
+                table_number: finalTableNumber,
+                qr_token: qrToken,
+                layout_data: {
+                    x: foundX,
+                    y: foundY,
+                    width: 2.2, 
+                    depth: 2.2
+                }
+            })
+            .select()
+            .single()
+            
+           if (error) throw error
+           
+           // Replace temp table with real one
+           setLocalTables(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t))
+           toast.success(`Table ${finalTableNumber} added!`)
+           
+      } catch (err) {
+          console.error(err)
+          toast.error("Failed to add table")
+          setLocalTables(prev => prev.filter(t => t.id !== tempId))
+      }
+  }
+
   const handleResetLayout = () => {
       if (!confirm("Are you sure? This will strictly arrange tables by number and reset all custom sizes.")) return;
       
@@ -81,7 +191,7 @@ export default function DashboardPage() {
           layout_data: { x: 0, y: 0 } // Force clear
       })))
       // Reset dimensions too
-      const fullyReset = reset.map(t => ({ ...t, width: 1.2, depth: 1.2 }))
+      const fullyReset = reset.map(t => ({ ...t, width: 2.2, depth: 2.2 }))
       
       setLocalTables(fullyReset)
       toast('Layout reset to grid', { icon: 'ℹ️' })
@@ -109,7 +219,6 @@ export default function DashboardPage() {
                 onTablesUpdate={handleUpdateTables}
                 selectedTableId={selectedTableId}
                 onSelectTable={setSelectedTableId}
-                mode={editMode}
             />
         ) : (
             <RestaurantMap tables={mergedTables} />
@@ -141,6 +250,13 @@ export default function DashboardPage() {
               <div className="flex gap-2">
                   {isEditing ? (
                       <div className="flex gap-2 animate-in slide-in-from-top-2">
+                        <button 
+                            onClick={handleAddTable}
+                            className="bg-white text-green-600 border border-green-100 px-4 py-2 rounded-xl shadow-lg font-bold flex items-center gap-2 hover:bg-green-50 transition-colors mr-2"
+                        >
+                            <RiAddLine size={20} /> Add Table
+                        </button>
+
                         <button 
                             onClick={handleResetLayout}
                             className="bg-white text-red-600 border border-red-100 px-4 py-2 rounded-xl shadow-lg font-bold flex items-center gap-2 hover:bg-red-50 transition-colors mr-4"
@@ -179,26 +295,15 @@ export default function DashboardPage() {
         {/* Footer / Instructions for Edit Mode */}
         {isEditing && (
              <div className="self-center pointer-events-auto flex flex-col items-center gap-4 mb-8">
-                 
-                 {/* Tool Switcher */}
-                 <div className="flex bg-white rounded-full shadow-xl p-1 gap-1">
-                    <button 
-                        onClick={() => setEditMode('translate')}
-                        className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-bold transition-all ${editMode === 'translate' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                        <RiDragMove2Line size={18} /> Move
-                    </button>
-                    <button 
-                        onClick={() => setEditMode('scale')}
-                        className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-bold transition-all ${editMode === 'scale' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                        <RiShapeLine size={18} /> Resize
-                    </button>
-                 </div>
-
                  <div className="bg-black/80 text-white px-6 py-3 rounded-2xl backdrop-blur-md text-sm font-medium shadow-xl flex items-center gap-6">
                      <div className="flex items-center gap-2">
-                         {editMode === 'translate' ? "Drag arrows to move" : "Drag boxes to resize"}
+                         <RiDragMove2Line className="text-blue-400" />
+                         <span>Drag tables to move</span>
+                     </div>
+                     <div className="w-px h-4 bg-white/20"></div>
+                     <div className="flex items-center gap-2">
+                         <RiShapeLine className="text-orange-400" />
+                         <span>Drag handles to resize</span>
                      </div>
                  </div>
              </div>

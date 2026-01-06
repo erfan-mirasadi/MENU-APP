@@ -4,8 +4,8 @@ export function calculateDefaultLayout(tables) {
 
   // Config for the grid
   const COLS = 5; // Number of tables per row
-  const SPACING_X = 20; // Distance between columns (database units, not 3D units)
-  const SPACING_Y = 20; // Distance between rows (database units)
+  const SPACING_X = 35; // Distance between columns (database units, not 3D units)
+  const SPACING_Y = 35; // Distance between rows (database units)
   const START_X = 0;
   const START_Y = 0;
 

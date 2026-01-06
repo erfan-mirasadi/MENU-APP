@@ -43,7 +43,7 @@ function ResizeHandle({ position, direction, onResizeStart }) {
  * Scene Content
  * Handles the 3D scene, drag logic, and rendering.
  */
-function SceneContent({ tables, onUpdate, selectedId, onSelect, mode = 'translate' }) {
+function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
     const orbitRef = useRef()
     const [draggingId, setDraggingId] = useState(null)
     const [dragStartOffset, setDragStartOffset] = useState([0,0])
@@ -72,13 +72,13 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect, mode = 'translat
         e.stopPropagation()
         onSelect(id)
         
-        if (mode === 'translate') {
-            setDraggingId(id)
-            const offX = e.point.x - (currentX/10)
-            const offZ = e.point.z - (currentY/10)
-            setDragStartOffset([offX, offZ])
-            // OrbitControls disabled by useEffect
-        }
+        // Always enable drag if we clicked the table body
+        // (Handles have stopPropagation so they won't trigger this)
+        setDraggingId(id)
+        const offX = e.point.x - (currentX/10)
+        const offZ = e.point.z - (currentY/10)
+        setDragStartOffset([offX, offZ])
+        // OrbitControls disabled by useEffect
     }
 
     const handleGlobalPointerUp = (e) => {
@@ -225,11 +225,23 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect, mode = 'translat
                         >
                              <boxGeometry args={[w, 0.8, d]} />
                              <meshStandardMaterial color={color} />
-                             <Text position={[0,1,0]} fontSize={0.5} color="black">{table.table_number}</Text>
+                             <Text 
+                                position={[0, 0.41, 0]} 
+                                rotation={[-Math.PI / 2, 0, 0]}
+                                fontSize={Math.min(w, d) * 0.35} 
+                                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff"
+                                color="#1f2937" // Gray-800 for a softer print look
+                                anchorX="center"
+                                anchorY="middle"
+                                maxWidth={w * 0.8}
+                                letterSpacing={-0.05}
+                             >
+                                {table.table_number}
+                             </Text>
                         </mesh>
                         
-                        {/* Handles - Only if Selected and Scale Mode */}
-                        {isSelected && mode === 'scale' && !draggingId && (
+                        {/* Handles - Always show if Selected (Unified Mode) */}
+                        {isSelected && !draggingId && (
                             <>
                                 <ResizeHandle direction="x+" position={[w/2 + 0.15, 0, 0]} 
                                     onResizeStart={(dir, p) => handleResizeHandleDown(dir, p, table)} 
@@ -295,7 +307,7 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect, mode = 'translat
     )
 }
 
-export default function TableEditor({ tables, onTablesUpdate, onSelectTable, selectedTableId, mode = 'translate' }) {
+export default function TableEditor({ tables, onTablesUpdate, onSelectTable, selectedTableId }) {
     
     // Internal handler to update one table in the list
     const handleOneTableUpdate = (updatedTable) => {
@@ -319,7 +331,6 @@ export default function TableEditor({ tables, onTablesUpdate, onSelectTable, sel
                 onUpdate={handleOneTableUpdate} 
                 selectedId={selectedTableId}
                 onSelect={onSelectTable}
-                mode={mode} // Pass mode here
              />
         </Canvas>
     )
