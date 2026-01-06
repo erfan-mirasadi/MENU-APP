@@ -1,21 +1,80 @@
 'use client'
 import { Canvas } from '@react-three/fiber'
-import { MapControls, OrthographicCamera, Text, Environment, TransformControls, useCursor } from '@react-three/drei'
-import { useState, useEffect } from 'react'
+import { MapControls, OrthographicCamera, Text, Environment, useCursor } from '@react-three/drei'
+import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
+
+// Add useFrame to imports
+import { useFrame } from '@react-three/fiber'
 
 function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status, isEditing, onSelect, isSelected }) {
   const [hovered, setHovered] = useState(false)
   useCursor(hovered, 'pointer', 'auto')
+  const materialRef = useRef()
   
-  // Logic for color: Orange for occupied, Green for payment, White for free
-  let baseColor = '#ffffff'
-  if (status === 'ordering') baseColor = '#f97316' // Orange
-  if (status === 'waiting_payment') baseColor = '#22c55e' // Green
-  if (hovered && status === 'free') baseColor = '#e5e7eb' // Gray hover
+  // Logic for color mapping
+  // Statuses: 'free' | 'ordered' | 'active' | 'payment_requested'
+  // DB might use different strings, so we normalize or handle multiple cases.
   
-  // In editing mode, if selected, use distinct blue
-  if (isEditing && isSelected) baseColor = '#3b82f6' // Blue selected
+  const getBaseColor = (s) => {
+      if (s === 'ordered') return '#f97316' // Orange
+      if (s === 'active' || s === 'confirmed') return '#22c55e' // Green
+      if (s === 'payment_requested' || s === 'waiting_payment') return '#ef4444' // Red
+      return '#ffffff' // free
+  }
+  
+  useEffect(() => {
+     if(materialRef.current) {
+        // Set initial color state mostly for static references
+        // Animation loop will override for active states
+        materialRef.current.color.set(getBaseColor(status))
+     }
+  }, [status])
+
+  useFrame((state) => {
+      if (!materialRef.current) return
+
+      const time = state.clock.getElapsedTime()
+      
+      if (status === 'confirmed') {
+          // Orange Pulse / Blink (User Request: "vaqti garson taeid kone... cheshmak narenji")
+          const intensity = 0.5 + Math.sin(time * 8) * 0.5 // Fast blink
+          materialRef.current.emissive.set('#f97316')
+          materialRef.current.emissiveIntensity = intensity * 0.8
+          materialRef.current.color.set('#f97316')
+      } 
+      else if (status === 'active' || status === 'preparing' || status === 'served') {
+          // Green Glow (Steady Neon)
+          materialRef.current.emissive.set('#22c55e')
+          materialRef.current.emissiveIntensity = 0.5
+          materialRef.current.color.set('#22c55e')
+      }
+      else if (status === 'payment_requested') {
+          // Red Glow (Bill Request)
+          materialRef.current.emissive.set('#ef4444')
+          materialRef.current.emissiveIntensity = 0.6
+          materialRef.current.color.set('#ef4444')
+      }
+       else if (status === 'ordering') {
+          // Pending Waiter Approval - Maybe softer orange, no blink?
+          materialRef.current.emissive.set('#f97316')
+          materialRef.current.emissiveIntensity = 0.2
+          materialRef.current.color.set('#fdba74') 
+      }
+      else if (status === 'occupied') {
+          // Seated but nothing ordered - Blueish
+           materialRef.current.emissive.set('#3b82f6')
+           materialRef.current.emissiveIntensity = 0.2
+           materialRef.current.color.set('#93c5fd')
+      }
+      else {
+          // Free / Default
+           materialRef.current.emissiveIntensity = 0
+           const targetColor = (isEditing && isSelected) ? '#3b82f6' : 
+                               (hovered ? '#e5e7eb' : '#ffffff')
+           materialRef.current.color.set(targetColor)
+      }
+  })
 
   return (
     <group position={position}>
@@ -25,18 +84,21 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
           if (isEditing) {
               onSelect(id)
           } else {
-              console.log('Open table details for:', id)
-              // Open order modal here
+              if (onSelect) onSelect(id)
           }
         }}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
         {/* Table Body */}
-        <boxGeometry args={[width, 0.8, depth]} /> {/* Dynamic Dimensions */}
-        <meshStandardMaterial color={baseColor} roughness={0.3} metalness={0.1} />
+        <boxGeometry args={[width, 0.8, depth]} />
+        <meshStandardMaterial 
+            ref={materialRef}
+            roughness={0.2} 
+            metalness={0.1} 
+        />
         
-        {/* Table Number Text */}
+        {/* Table Number Text - Engraved Look */}
         <Text
           position={[0, 0.41, 0]} 
           rotation={[-Math.PI / 2, 0, 0]} 
@@ -53,7 +115,7 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
         </Text>
       </mesh>
 
-      {/* Soft Shadow / Floor Plane */}
+      {/* Soft Shadow */}
       <mesh position={[0, -0.39, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[width + 0.4, depth + 0.4]} />
         <meshBasicMaterial 
@@ -67,8 +129,7 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
   )
 }
 
-function SceneContent({ tables, isEditing, onLayoutChange }) {
-    const [selectedTableId, setSelectedTableId] = useState(null)
+function SceneContent({ tables }) {
     const [localTables, setLocalTables] = useState(tables)
 
     // Update local tables when props change
@@ -76,73 +137,21 @@ function SceneContent({ tables, isEditing, onLayoutChange }) {
         setLocalTables(tables)
     }, [tables])
 
-    const handleTransformEnd = (e) => {
-        if (!e.target.object) return
-        
-        const object = e.target.object
-        const position = object.position
-        
-        // Convert back to DB coordinates (multiply by 10)
-        const newX = position.x * 10
-        const newY = position.z * 10
-        
-        // Find which table this object belongs to via selectedTableId
-        // This is tricky with TransformControls as it wraps the object.
-        // Better strategy: We can't easily attach TransformControls to a group inside a map loop directly strictly easily.
-        // Standard way: Render TransformControls IMPERATIVELY or conditionally.
-        
-        // Actually simpler:
-        // Update local state and notify parent
-        const updatedTables = localTables.map(t => {
-            if (t.id === selectedTableId) {
-                return { ...t, x: newX, y: newY }
-            }
-            return t
-        })
-        
-        setLocalTables(updatedTables)
-        onLayoutChange(updatedTables)
-    }
-
     return (
         <>
             {localTables.map((table) => (
-                <group key={table.id}>
-                    {/* If this is the selected table in edit mode, wrap/attach TransformControls */}
-                    {isEditing && selectedTableId === table.id ? (
-                        <TransformControls 
-                             mode="translate" 
-                             translationSnap={1} // Snap to grid
-                             onMouseUp={handleTransformEnd} 
-                             // Lock Y axis (height)
-                             showY={false}
-                        >
-                             <TableBox 
-                                id={table.id}
-                                position={[table.x / 10, 0.4, table.y / 10]} 
-                                width={table.width} 
-                                depth={table.depth}
-                                tableNumber={table.table_number}
-                                status={table.status}
-                                isEditing={isEditing}
-                                onSelect={setSelectedTableId}
-                                isSelected={true}
-                            />
-                        </TransformControls>
-                    ) : (
-                        <TableBox 
-                            id={table.id}
-                            position={[table.x / 10, 0.4, table.y / 10]} 
-                            width={table.width} 
-                            depth={table.depth}
-                            tableNumber={table.table_number}
-                            status={table.status}
-                            isEditing={isEditing}
-                            onSelect={setSelectedTableId}
-                            isSelected={false}
-                        />
-                    )}
-                </group>
+                <TableBox 
+                    key={table.id}
+                    id={table.id}
+                    position={[table.x / 10, 0.4, table.y / 10]} 
+                    width={table.width} 
+                    depth={table.depth}
+                    tableNumber={table.table_number}
+                    status={table.status}
+                    isEditing={false}
+                    onSelect={() => {}}
+                    isSelected={false}
+                />
             ))}
         </>
     )

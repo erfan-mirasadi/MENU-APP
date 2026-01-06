@@ -7,9 +7,10 @@ import { calculateDefaultLayout } from '../_utils/layoutUtils'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { RiEdit2Line, RiSave3Line, RiCloseLine, RiRestartLine, RiDragMove2Line, RiShapeLine, RiAddLine } from 'react-icons/ri'
-
+import { useRouter } from 'next/navigation'
 export default function DashboardPage() {
-  const { tables, sessions, loading, restaurantId } = useCashierData()
+  const router = useRouter()
+  const { tables, sessions, loading, restaurantId, refetch } = useCashierData()
   const [isEditing, setIsEditing] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState(null)
   
@@ -24,9 +25,48 @@ export default function DashboardPage() {
   const mergedTables = useMemo(() => {
     const merged = tables.map((table) => {
        const activeSession = sessions.find((s) => s.table_id === table.id);
+       
+       let computedStatus = 'free'
+       
+       if (activeSession) {
+           const items = activeSession.order_items || []
+           const requests = activeSession.service_requests || []
+           
+           // 1. Bill/Service Request (Red)
+           const hasPaymentRequest = requests.some(r => r.status === 'pending') // Assuming any request is urgent for now
+           
+           // 2. Counts
+           const pendingCount = items.filter(i => i.status === 'pending').length
+           const confirmedCount = items.filter(i => i.status === 'confirmed').length
+           const preparingCount = items.filter(i => i.status === 'preparing').length
+           const servedCount = items.filter(i => i.status === 'served').length
+           
+           if (hasPaymentRequest) {
+               computedStatus = 'payment_requested'
+           }
+           else if (confirmedCount > 0) {
+               // Waiter confirmed, Cashier Needs to see "Orange Blink"
+               computedStatus = 'confirmed' 
+           }
+           else if (preparingCount > 0 || servedCount > 0) {
+               // In kitchen or eating -> Green
+               computedStatus = 'active'
+           }
+           else if (pendingCount > 0) {
+               // Waiter hasn't confirmed yet. 
+               // Should Cashier see this? Maybe as "ordering" (Orange but not blinking? Or just standard Orange)
+               // User said "When Waiter confirms -> Orange Blink".
+               computedStatus = 'ordering'
+           }
+           else {
+               // Session open but no active items (Occupied / Seated)
+               computedStatus = 'occupied' 
+           }
+       }
+
        return {
          ...table,
-         status: activeSession ? activeSession.status : 'free',
+         status: computedStatus,
          // Ensure defaults
          width: table.layout_data?.width || 2.2,
          depth: table.layout_data?.depth || 2.2,
@@ -66,7 +106,7 @@ export default function DashboardPage() {
           toast.success('Floor plan saved successfully')
           setIsEditing(false)
           setSelectedTableId(null)
-          window.location.reload()
+          refetch() // Explicitly refresh data
       } catch (err) {
           console.error(err)
           toast.error('Failed to save layout')

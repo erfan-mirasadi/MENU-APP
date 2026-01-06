@@ -13,7 +13,7 @@ export function calculateDefaultLayout(tables) {
     // If table already has valid layout data (non-zero), keep it.
     // Assuming (0,0) is "unset" or default. 
     // If you want to force re-layout, you'd ignore this check.
-    if (table.layout_data?.x !== undefined && table.layout_data?.x !== 0 && table.layout_data?.y !== 0) {
+    if (table.layout_data?.x != null && table.layout_data?.y != null) {
       return {
         ...table,
         x: table.layout_data.x,

@@ -58,6 +58,8 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
     useCursor(!!hoveredId && !draggingId && !resizingDirection, 'grab', 'auto')
     useCursor(!!draggingId || !!resizingDirection, 'grabbing', 'auto')
 
+    const tableRefs = useRef({})
+
     // Disable OrbitControls when any interaction is active
     useEffect(() => {
         if (orbitRef.current) {
@@ -68,32 +70,56 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
 
     /* ------------------- MOVE LOGIC ------------------- */
     
-    const handleTablePointerDown = (e, id, currentX, currentY) => {
+    const handleTablePointerDown = (e, id) => {
         e.stopPropagation()
         onSelect(id)
         
-        // Always enable drag if we clicked the table body
-        // (Handles have stopPropagation so they won't trigger this)
         setDraggingId(id)
-        const offX = e.point.x - (currentX/10)
-        const offZ = e.point.z - (currentY/10)
-        setDragStartOffset([offX, offZ])
-        // OrbitControls disabled by useEffect
+        
+        // Store offset relative to the group's current position (visual) vs click point
+        // Pointer X/Z are in world space (approx). 
+        // Group position is tables.x/10.
+        
+        const mesh = tableRefs.current[id]
+        if (mesh) {
+             const currentGroupX = mesh.position.x
+             const currentGroupZ = mesh.position.z
+             
+             // Calculate visual offset
+             const offX = e.point.x - currentGroupX
+             const offZ = e.point.z - currentGroupZ
+             
+             setDragStartOffset([offX, offZ])
+        }
     }
 
     const handleGlobalPointerUp = (e) => {
         e.stopPropagation()
+        
         // Commit Move
         if (draggingId) {
             const table = tables.find(t => t.id === draggingId)
-            if (table) {
+            const mesh = tableRefs.current[draggingId]
+            
+            if (table && mesh) {
+                // Read final visual position from ref
+                const finalVisualX = mesh.position.x
+                const finalVisualZ = mesh.position.z
+                
+                // Convert to DB units
+                const dbX = finalVisualX * 10
+                const dbY = finalVisualZ * 10 // Z becomes Y in DB
+                
+                // Snap
                 const SNAP = 5
-                const snappedX = Math.round(table.x / SNAP) * SNAP
-                const snappedY = Math.round(table.y / SNAP) * SNAP
+                const snappedX = Math.round(dbX / SNAP) * SNAP
+                const snappedY = Math.round(dbY / SNAP) * SNAP
+                
                 onUpdate({ ...table, x: snappedX, y: snappedY })
             }
             setDraggingId(null)
         }
+        
         // Commit Resize
         if (resizingDirection) {
             setResizingDirection(null)
@@ -113,10 +139,6 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
             x: table.x,
             y: table.y
         })
-        // We use the hitPoint on the handle as visual start, 
-        // BUT for the delta calculation, it's safer to rely on the plane projection
-        // to avoid "depth jumps" if handle and plane have different Y.
-        // However, standardizing on e.point is usually fine.
         setResizeStartPoint([hitPoint.x, hitPoint.z])
     }
 
@@ -135,49 +157,33 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
         let newY = initialResizeData.y
 
         // Calculate changes based on direction
-        const dir = resizingDirection
+        // NOTE: For resize, we are still updating React state because geometry changes are expensive/complex to do purely imperatively without rerender.
+        // It's acceptable for V1.
         
-        if (dir === 'x+') {
-            // Dragging Right Edge
-            // New Width = Old Width + Delta
+        if (resizingDirection === 'x+') {
             newW = Math.max(0.5, initialResizeData.width + deltaX)
-            // Center Shift = Change / 2
-            // If deltaX is +1 (grew by 1), center moves +0.5
-            // But we work in DB units (x10). 
-            // Width is visual units. X is DB units.
-            // visual shift = (newW - oldW) / 2
-            // db shift = visual shift * 10
             const visualShift = (newW - initialResizeData.width) / 2
             newX = initialResizeData.x + (visualShift * 10)
         }
-        else if (dir === 'x-') {
-            // Dragging Left Edge
-            // If we move left (delta negative), width grows
+        else if (resizingDirection === 'x-') {
             newW = Math.max(0.5, initialResizeData.width - deltaX)
             const visualShift = (newW - initialResizeData.width) / 2
             newX = initialResizeData.x - (visualShift * 10)
         }
-        else if (dir === 'z+') {
+        else if (resizingDirection === 'z+') {
             newD = Math.max(0.5, initialResizeData.depth + deltaZ)
             const visualShift = (newD - initialResizeData.depth) / 2
             newY = initialResizeData.y + (visualShift * 10)
         }
-        else if (dir === 'z-') {
+        else if (resizingDirection === 'z-') {
             newD = Math.max(0.5, initialResizeData.depth - deltaZ)
             const visualShift = (newD - initialResizeData.depth) / 2
             newY = initialResizeData.y - (visualShift * 10)
         }
 
-        // Snap dimensions to 0.1 visual units for cleanliness? 
-        // Or keep smooth until drop? User likes smooth.
-        // We can snap the Width/Depth to 1 decimal place to prevent weird floats
         newW = Math.round(newW * 10) / 10
         newD = Math.round(newD * 10) / 10
         
-        // Recalculate center based on snapped width? 
-        // Ideally yes, but let's stick to the direct math for responsiveness.
-        
-        // Find visible table in list and update
         const table = tables.find(t => t.id === selectedId)
         if(table) {
              onUpdate({ ...table, width: newW, depth: newD, x: newX, y: newY })
@@ -217,9 +223,10 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                     <group 
                         key={table.id} 
                         position={[table.x/10, 0.4, table.y/10]}
+                        ref={el => tableRefs.current[table.id] = el}
                     >
                         <mesh
-                            onPointerDown={(e) => handleTablePointerDown(e, table.id, table.x, table.y)}
+                            onPointerDown={(e) => handleTablePointerDown(e, table.id)}
                             onPointerOver={() => setHoveredId(table.id)}
                             onPointerOut={() => setHoveredId(null)}
                         >
@@ -271,12 +278,13 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                     onPointerMove={(e) => {
                          if (draggingId) {
                             e.stopPropagation()
-                            const t = tables.find(t => t.id === draggingId)
-                            if (t) {
-                                const targetX = e.point.x - dragStartOffset[0]
-                                const targetZ = e.point.z - dragStartOffset[1]
-                                onUpdate({ ...t, x: targetX * 10, y: targetZ * 10 })
-                            }
+                            // OPTIMIZED: Direct Mutation
+                             const mesh = tableRefs.current[draggingId]
+                             if (mesh) {
+                                 const newX = e.point.x - dragStartOffset[0]
+                                 const newZ = e.point.z - dragStartOffset[1]
+                                 mesh.position.set(newX, 0.4, newZ)
+                             }
                          }
                          if (resizingDirection) {
                              handleResizeMove(e)
