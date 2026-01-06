@@ -1,7 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getCategories } from "@/services/categoryService";
 import { getProducts } from "@/services/productService";
-import { getRestaurantByOwnerId } from "@/services/restaurantService";
+import { getRestaurantByOwnerId, getRestaurantById } from "@/services/restaurantService";
+import { getUserProfile } from "@/services/userService";
 import ProductsView from "@/app/admin/_components/ui/ProductsView";
 import { redirect } from "next/navigation";
 import Image from "next/image";
@@ -16,7 +17,17 @@ export default async function DashboardPage() {
     error: authError,
   } = await supabase.auth.getUser();
 
-  const restaurant = await getRestaurantByOwnerId(user.id);
+  let restaurant = null;
+  if (user) {
+    restaurant = await getRestaurantByOwnerId(user.id);
+    
+    if (!restaurant) {
+       const profile = await getUserProfile(supabase, user.id);
+       if (profile?.restaurant_id) {
+          restaurant = await getRestaurantById(profile.restaurant_id);
+       }
+    }
+  }
 
   if (authError || !user) {
     redirect("/login");

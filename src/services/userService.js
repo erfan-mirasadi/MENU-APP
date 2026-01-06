@@ -3,7 +3,7 @@ export async function getUserProfile(supabase, userId) {
   try {
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("role")
+      .select("*")
       .eq("id", userId)
       .single();
 

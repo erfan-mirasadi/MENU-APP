@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import { getRestaurantByOwnerId } from "@/services/restaurantService";
+import { getRestaurantByOwnerId, getRestaurantById } from "@/services/restaurantService";
 import { getUserProfile } from "@/services/userService";
 import AdminLayoutClient from "./AdminLayoutClient";
 
@@ -18,7 +18,13 @@ export default async function AdminLayout({ children }) {
 
   let restaurant = null;
   if (user) {
+    // 1. Try fetching by Owner ID (for original Owners)
     restaurant = await getRestaurantByOwnerId(user.id);
+    
+    // 2. If not found, try fetching by Restaurant ID from Profile (for invited Managers)
+    if (!restaurant && profile?.restaurant_id) {
+        restaurant = await getRestaurantById(profile.restaurant_id);
+    }
   }
 
   return (

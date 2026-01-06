@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { getUserProfile } from "@/services/userService";
 
 export const useCashierData = () => {
   const [tables, setTables] = useState([]);
@@ -17,16 +18,21 @@ export const useCashierData = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      // 0. Get Restaurant ID from Profile
+      const profile = await getUserProfile(supabase, user.id);
+       
+      const restaurantId = profile?.restaurant_id;
+
+      if (!restaurantId) {
+           console.error("No restaurant ID found for cashier");
+           return;
+      }
+
       // 1. Fetch Tables
-      // Note: Assuming cashier also wants to see all tables for the restaurant they are associated with?
-      // Usually cashiers are linked to a restaurant too.
-      // Waiter implementation gets restaurant via owner/link.
-      // Let's assume the cashier is linked correctly or just fetch tables if RLS handles it.
-      // Waiter implementation fetches all tables from "tables" table directly.
-      
       const { data: tablesData } = await supabase
         .from("tables")
         .select("*")
+        .eq("restaurant_id", restaurantId)
         .order("table_number", { ascending: true });
 
       setTables(tablesData || []);
@@ -54,6 +60,7 @@ export const useCashierData = () => {
           )
         `
         )
+        .eq("restaurant_id", restaurantId)
         .neq("status", "closed");
 
       if (error) console.error("Session fetch error:", error);

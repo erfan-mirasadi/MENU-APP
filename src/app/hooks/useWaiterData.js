@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { getUserProfile } from "@/services/userService";
 
 export const useWaiterData = () => {
   const [tables, setTables] = useState([]);
@@ -17,10 +18,22 @@ export const useWaiterData = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      // 0. Get Restaurant ID from Profile
+      const profile = await getUserProfile(supabase, user.id);
+      
+      const restaurantId = profile?.restaurant_id;
+
+      if (!restaurantId) {
+          console.error("No restaurant ID found for user");
+          // Optionally handle this state (e.g. empty tables)
+          return;
+      }
+
       // 1. Fetch Tables
       const { data: tablesData } = await supabase
         .from("tables")
         .select("*")
+        .eq("restaurant_id", restaurantId)
         .order("table_number", { ascending: true });
 
       setTables(tablesData || []);
@@ -47,6 +60,7 @@ export const useWaiterData = () => {
           )
         `
         )
+        .eq("restaurant_id", restaurantId)
         .neq("status", "closed");
 
       // نکته مهم: خط product:products (...) باعث میشه اسم غذا رو بیاره
