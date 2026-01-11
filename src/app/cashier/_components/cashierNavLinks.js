@@ -1,5 +1,6 @@
 import {
   RiLayoutGridLine, // Dashboard (Tables)
+  RiFileListLine, // Reports
 } from "react-icons/ri";
 
 export const CASHIER_LINKS = [
@@ -7,6 +8,11 @@ export const CASHIER_LINKS = [
     name: "Dashboard",
     path: "/cashier/dashboard",
     icon: RiLayoutGridLine,
+  },
+  {
+    name: "Reports",
+    path: "/cashier/reports",
+    icon: RiFileListLine,
   },
   // {
   //   name: "History",
