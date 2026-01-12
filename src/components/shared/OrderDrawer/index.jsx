@@ -28,7 +28,7 @@ export default function OrderDrawer({
     role = "waiter", 
     onCheckout 
 }) {
-    const { state, setters, actions } = useOrderDrawerLogic(session, table, onCheckout);
+    const { state, setters, actions } = useOrderDrawerLogic(session, table, onCheckout, role);
     const {
         loading, localItems, pendingItems, confirmedItems, activeItems, totalAmount,
         isMenuOpen, isPaymentModalOpen, isVoidModalOpen, itemToVoid, isBatchEditing, batchItems
@@ -53,7 +53,7 @@ export default function OrderDrawer({
                     session={session}
                     onClose={onClose}
                     onOpenMenu={() => setters.setIsMenuOpen(true)}
-                    onCloseTable={actions.handleCloseTable}
+                    onCloseTable={actions.handleForceCloseTable}
                 />
 
                 {role === 'cashier' && (
@@ -82,7 +82,11 @@ export default function OrderDrawer({
                                 loading={loading}
                                 onUpdateQty={actions.onUpdateQty}
                                 onDelete={actions.onDeleteItem}
-                                onConfirm={actions.handleConfirmOrder}
+                                onConfirm={
+                                    role === 'cashier' 
+                                        ? actions.handleCashierInstantSend 
+                                        : actions.handleConfirmOrder
+                                }
                             />
 
                             {/* 2. Confirmed Items (Cashier specific usually) */}
@@ -117,7 +121,7 @@ export default function OrderDrawer({
                 {session && (
                     <DrawerFooter
                         totalAmount={totalAmount}
-                        onCloseTable={actions.handleCloseTable}
+                        onCloseTable={actions.handlePaymentRequest}
                         loading={loading}
                     />
                 )}

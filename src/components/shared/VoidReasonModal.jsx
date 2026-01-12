@@ -36,25 +36,39 @@ const VoidReasonModal = ({ isOpen, onClose, onConfirm, item }) => {
         <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3 text-red-500">
                 <RiAlertFill size={24} />
-                <h2 className="text-xl font-bold text-white">Void Confirmed Item</h2>
+                <h2 className="text-xl font-bold text-white">
+                    {item ? "Void Confirmed Item" : "Void & Close Table"}
+                </h2>
             </div>
             <button onClick={onClose} className="text-[#ABBBC2] hover:text-white">
                 <RiCloseLine size={24} />
             </button>
         </div>
 
-        <div className="mb-6 p-4 bg-[#252836] rounded-xl flex items-center gap-3">
-             {item?.product?.image_url && (
-                 <img src={item.product.image_url} alt="" className="w-12 h-12 rounded-lg object-cover bg-black" />
-             )}
-             <div>
-                 <p className="text-white font-bold">{item?.product?.title?.en || "Unknown Item"}</p>
-                 <p className="text-[#ABBBC2] text-sm">{item?.quantity} x ₺{item?.unit_price_at_order}</p>
+        {item && (
+            <div className="mb-6 p-4 bg-[#252836] rounded-xl flex items-center gap-3">
+                 {item?.product?.image_url && (
+                     <img src={item.product.image_url} alt="" className="w-12 h-12 rounded-lg object-cover bg-black" />
+                 )}
+                 <div>
+                     <p className="text-white font-bold">{item?.product?.title?.en || "Unknown Item"}</p>
+                     <p className="text-[#ABBBC2] text-sm">{item?.quantity} x ₺{item?.unit_price_at_order}</p>
+                 </div>
+            </div>
+        )}
+
+        {!item && (
+             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                 <p className="text-red-200 text-sm">
+                    Warning: This table has active orders. Closing it will <b>VOID ALL</b> current items.
+                 </p>
              </div>
-        </div>
+        )}
 
         <div className="space-y-4 mb-8">
-            <label className="block text-white font-medium">Why are you canceling this?</label>
+            <label className="block text-white font-medium">
+                {item ? "Why are you canceling this?" : "Reason for closing & voiding:"}
+            </label>
             <div className="grid grid-cols-1 gap-2">
                 {REASONS.map(r => (
                     <button

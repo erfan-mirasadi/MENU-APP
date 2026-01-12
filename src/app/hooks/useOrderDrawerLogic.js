@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import {
   confirmOrderItems,
   startTableSession,
+  closeTableSession,
   updateOrderItem,
   deleteOrderItem,
   addOrderItem,
@@ -10,7 +11,7 @@ import {
 } from "@/services/waiterService";
 import { voidOrderItem, updateOrderItemSecurely } from "@/services/orderService";
 
-export const useOrderDrawerLogic = (session, table, onCheckout) => {
+export const useOrderDrawerLogic = (session, table, onCheckout, role = "waiter") => {
   const [loading, setLoading] = useState(false);
   const [localItems, setLocalItems] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,8 +56,34 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
     finally { setLoading(false); }
   };
 
-  const handleCloseTable = async () => {
+  const handlePaymentRequest = async () => {
     setIsPaymentModalOpen(true);
+  };
+
+  const handleForceCloseTable = async () => {
+      // 1. Initial Safety Check
+      if (!confirm("Are you sure you want to close this table? This action cannot be undone.")) {
+          return;
+      }
+
+      const hasActiveOrders = localItems.some(i => ['confirmed', 'preparing', 'served'].includes(i.status));
+
+      if (hasActiveOrders) {
+          // 2. If Active Orders -> Force Void Reason Prompt
+          setItemToVoid({ actionType: 'TABLE_CLOSE' }); 
+          setIsVoidModalOpen(true);
+      } else {
+          // 3. If No Active Orders -> Proceed to Close
+          setLoading(true);
+          try {
+              await closeTableSession(session.id);
+              toast.success("Table Closed");
+          } catch(e) {
+              toast.error(e.message);
+          } finally {
+              setLoading(false);
+          }
+      }
   };
 
   const handleConfirmOrder = async () => {
@@ -81,20 +108,23 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
   };
 
   const handleMenuAdd = async (product) => {
-    const existingPending = localItems.find(i => 
-        (i.product_id === product.id || i.product?.id === product.id) && i.status === "pending"
+    // Determine status based on role: Cashier adds as 'confirmed' to avoid Waiter alerts
+    const initialStatus = role === 'cashier' ? 'confirmed' : 'pending';
+
+    const existingItem = localItems.find(i => 
+        (i.product_id === product.id || i.product?.id === product.id) && i.status === initialStatus
     );
 
-    if (existingPending) {
-        const newQty = existingPending.quantity + 1;
-        setLocalItems(prev => prev.map(i => i.id === existingPending.id ? {...i, quantity: newQty} : i));
-        try { await updateOrderItem(existingPending.id, { quantity: newQty }); } catch(e){}
+    if (existingItem) {
+        const newQty = existingItem.quantity + 1;
+        setLocalItems(prev => prev.map(i => i.id === existingItem.id ? {...i, quantity: newQty} : i));
+        try { await updateOrderItem(existingItem.id, { quantity: newQty }); } catch(e){}
     } else {
         const newItem = {
             id: `temp-${Date.now()}`,
             product, product_id: product.id,
             quantity: 1, unit_price_at_order: product.price,
-            status: "pending", created_at: new Date().toISOString()
+            status: initialStatus, created_at: new Date().toISOString()
         };
         setLocalItems(prev => [...prev, newItem]);
         try {
@@ -103,7 +133,7 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
                 product_id: product.id,
                 quantity: 1,
                 unit_price_at_order: product.price,
-                status: "pending"
+                status: initialStatus
             });
             toast.success("Item Added");
         } catch(e) {
@@ -152,12 +182,21 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
       }
   };
 
+
   const handleConfirmVoid = async (reason) => {
       if (!itemToVoid) return;
+      
       if (itemToVoid.actionType === 'BATCH_SAVE') {
           await executeBatchUpdate(reason);
           return;
       }
+
+      if (itemToVoid.actionType === 'TABLE_CLOSE') {
+          // Void All Active & Close
+          await closeTableWithVoid(reason);
+          return;
+      }
+
       try {
            await voidOrderItem(itemToVoid.id, reason);
            toast.success("Item Voided");
@@ -165,6 +204,44 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
       } catch(e) { toast.error(e.message); }
       setIsVoidModalOpen(false);
       setItemToVoid(null);
+  };
+
+  const closeTableWithVoid = async (reason) => {
+      setLoading(true);
+      try {
+          // 1. Void all items
+          // We can do this efficiently on backend or loop here.
+          // For safety, loop active items.
+          const active = localItems.filter(i => ['confirmed', 'preparing', 'served'].includes(i.status));
+          const promises = active.map(i => voidOrderItem(i.id, reason || "Table Force Closed"));
+          await Promise.all(promises);
+          
+          // 2. Close Session
+          await closeTableSession(session.id);
+          toast.success("Table Closed & Orders Voided");
+          
+          setIsVoidModalOpen(false);
+          setItemToVoid(null);
+      } catch (e) {
+          toast.error("Failed to close: " + e.message);
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleCashierInstantSend = async () => {
+    setLoading(true);
+    try {
+        // 1. Confirm Pending
+        await confirmOrderItems(session.id);
+        // 2. Start Preparing (Confirmed -> Served)
+        await startPreparingOrder(session.id);
+        toast.success("Sent to Kitchen! 👨‍🍳");
+    } catch(e) {
+        toast.error("Failed: " + e.message);
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleStartBatchEdit = () => {
@@ -267,7 +344,8 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
     },
     actions: {
         handleStartSession,
-        handleCloseTable,
+        handlePaymentRequest,
+        handleForceCloseTable,
         handleConfirmOrder,
         handleStartPreparing,
         handleMenuAdd,
@@ -275,6 +353,7 @@ export const useOrderDrawerLogic = (session, table, onCheckout) => {
         onUpdateQty,
         onDeleteItem,
         handleConfirmVoid,
+        handleCashierInstantSend,
         handleStartBatchEdit,
         handleCancelBatchEdit,
         handleExecuteBatch,

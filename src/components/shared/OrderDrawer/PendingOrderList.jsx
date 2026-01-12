@@ -58,9 +58,9 @@ export default function PendingOrderList({
                     ))}
                     <button
                         onClick={onConfirm}
-                        className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-bold rounded-lg border border-gray-600"
+                        className="w-full mt-4 py-4 bg-[#ea7c69] hover:bg-[#d96b58] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30"
                     >
-                        Override Confirm
+                        <FaCheck className="text-xl" /> SEND TO KITCHEN
                     </button>
                 </div>
             </OrderSection>

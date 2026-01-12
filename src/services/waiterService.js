@@ -40,11 +40,7 @@ export async function closeTableSession(sessionId) {
 
   if (sessionError) throw sessionError;
 
-  // Optional: Close items for data cleanliness
-  await supabase
-    .from("order_items")
-    .update({ status: "closed" })
-    .eq("session_id", sessionId);
+
 
   // Resolve pending service requests
   await supabase

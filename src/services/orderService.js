@@ -87,16 +87,29 @@ export async function submitDraftOrders(sessionId) {
   return true;
 }
 
+// Helper to get IP
+async function getClientIP() {
+    try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        return data.ip;
+    } catch (e) {
+        console.warn("Failed to get IP", e);
+        return null;
+    }
+}
+
 export async function voidOrderItem(itemId, reason) {
     // 1. Get User ID (Assuming authenticated)
     const { data: { user } } = await supabase.auth.getUser();
     
-    // 2. Fetch current item details (Snapshot)
+    // 2. Fetch current item details (Snapshot) + Restaurant ID via Session
     const { data: item, error: fetchError } = await supabase
         .from("order_items")
         .select(`
             *,
-            products (title)
+            products (title),
+            session:sessions (restaurant_id)
         `)
         .eq("id", itemId)
         .single();
@@ -104,6 +117,9 @@ export async function voidOrderItem(itemId, reason) {
     if (fetchError || !item) {
         throw new Error("Item not found");
     }
+
+    const restaurantId = item.session?.restaurant_id;
+    const ipAddress = await getClientIP();
 
     // 3. Log Activity
     const { error: logError } = await supabase
@@ -113,6 +129,8 @@ export async function voidOrderItem(itemId, reason) {
             resource: "order_items",
             resource_id: itemId,
             user_id: user?.id,
+            restaurant_id: restaurantId,
+            ip_address: ipAddress,
             details: {
                 reason,
                 voided_at: new Date().toISOString(),
@@ -154,9 +172,12 @@ export async function updateOrderItemSecurely(itemId, newQty, oldQty, reason) {
         // Fetch snapshot for detail
          const { data: item } = await supabase
             .from("order_items")
-            .select('products(title), unit_price_at_order')
+            .select('products(title), unit_price_at_order, session:sessions(restaurant_id)')
             .eq("id", itemId)
             .single();
+
+         const restaurantId = item?.session?.restaurant_id;
+         const ipAddress = await getClientIP();
 
          const { error: logError } = await supabase
             .from("activity_logs")
@@ -165,6 +186,8 @@ export async function updateOrderItemSecurely(itemId, newQty, oldQty, reason) {
                 resource: "order_items",
                 resource_id: itemId,
                 user_id: user?.id,
+                restaurant_id: restaurantId,
+                ip_address: ipAddress,
                 details: {
                     reason,
                     voided_quantity: oldQty - newQty,
