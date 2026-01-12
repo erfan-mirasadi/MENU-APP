@@ -7,13 +7,13 @@ import { getCategories } from "@/services/categoryService";
 import SmartMedia from "@/components/ui/SmartMedia";
 import toast from "react-hot-toast";
 
-export default function WaiterMenuModal({
+export default function MenuModal({
   isOpen,
   onClose,
-  cartItems, // آیتم‌های فعلی سبد خرید برای نمایش تعداد (اختیاری ولی حرفه‌ای)
-  onAdd, // تابع افزودن
-  onRemove, // تابع کم کردن
-  restaurantId, // شناسه رستوران برای فچ کردن دسته‌بندی‌ها
+  cartItems, // Current cart items for quantity display
+  onAdd, // Add function
+  onRemove, // Remove function
+  restaurantId, // Restaurant ID for fetching categories
 }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -26,13 +26,13 @@ export default function WaiterMenuModal({
     if (isOpen && products.length === 0) {
       const fetchData = async () => {
         try {
-          // فچ محصولات
+          // Fetch Products
           const productsData = await getMenuProducts(restaurantId);
           const validData =
             productsData?.filter((p) => p.title && p.price) || [];
           setProducts(validData);
 
-          // فچ دسته‌بندی‌ها از دیتابیس
+          // Fetch Categories
           if (restaurantId) {
             const categoriesData = await getCategories(restaurantId);
             setCategories(categoriesData || []);
@@ -48,7 +48,7 @@ export default function WaiterMenuModal({
     }
   }, [isOpen, restaurantId]);
 
-  // لیست دسته‌بندی‌ها برای نمایش (با All در ابتدا)
+  // Category List (with All at start)
   const categoryOptions = useMemo(() => {
     const allOption = { id: "All", title: { tr: "Hepsi", en: "All" } };
     return [allOption, ...categories];
@@ -57,7 +57,7 @@ export default function WaiterMenuModal({
   // --- FILTER LOGIC ---
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // سرچ در انگلیسی و ترکی
+      // Search in English and Turkish
       const titleEn = p.title?.en?.toLowerCase() || "";
       const titleTr = p.title?.tr?.toLowerCase() || "";
       const search = searchTerm.toLowerCase();
@@ -65,7 +65,7 @@ export default function WaiterMenuModal({
       const matchesSearch =
         titleEn.includes(search) || titleTr.includes(search);
 
-      // مچ کردن دسته بندی
+      // Match Category
       const matchesCat =
         selectedCategory === "All" || p.category_id === selectedCategory;
 

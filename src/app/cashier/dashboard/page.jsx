@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { useCashierData } from '@/app/hooks/useCashierData'
+import { useRestaurantData } from '@/app/hooks/useRestaurantData'
 import RestaurantMap from '../_components/RestaurantMap'
 import TableEditor from '../_components/TableEditor'
 import { calculateDefaultLayout } from '../_utils/layoutUtils'
@@ -8,22 +8,19 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { RiEdit2Line, RiSave3Line, RiCloseLine, RiRestartLine, RiDragMove2Line, RiShapeLine, RiAddLine } from 'react-icons/ri'
 import { useRouter } from 'next/navigation'
-import CashierOrderDrawer from '../_components/CashierOrderDrawer'
+import OrderDrawer from '@/components/shared/OrderDrawer'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { tables, sessions, loading, restaurantId, refetch, handleCheckout } = useCashierData()
+  // unified hook
+  const { tables, sessions, loading, restaurantId, refetch, handleCheckout } = useRestaurantData()
   const [isEditing, setIsEditing] = useState(false)
   
   // Selection State
   const [selectedTableId, setSelectedTableId] = useState(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   
-  // 'translate' | 'scale' - No longer needed
-  // const [editMode, setEditMode] = useState('translate')
-  
   // Local state for layout changes
-  // We need to keep track of FULL table objects now, because they might have new Width/Depth
   const [localTables, setLocalTables] = useState([])
 
   // Init local tables when entering edit mode or loading
@@ -59,8 +56,6 @@ export default function DashboardPage() {
            }
            else if (pendingCount > 0) {
                // Waiter hasn't confirmed yet. 
-               // Should Cashier see this? Maybe as "ordering" (Orange but not blinking? Or just standard Orange)
-               // User said "When Waiter confirms -> Orange Blink".
                computedStatus = 'ordering'
            }
            else {
@@ -72,10 +67,9 @@ export default function DashboardPage() {
        return {
          ...table,
          status: computedStatus,
-         // Ensure defaults
          width: table.layout_data?.width || 2.2,
          depth: table.layout_data?.depth || 2.2,
-         x: table.layout_data?.x || 0, // Fallback, will be fixed by grid calc if needed
+         x: table.layout_data?.x || 0,
          y: table.layout_data?.y || 0
        };
     });
@@ -119,10 +113,8 @@ export default function DashboardPage() {
   }
 
   const handleAddTable = async () => {
-      // 1. Calculate new Table Number (Smart Parsing)
       let maxNum = 0
       localTables.forEach(t => {
-          // Try to match "T-XX" or just numbers
           const match = t.table_number.toString().match(/(\d+)$/)
           if (match) {
               const num = parseInt(match[1], 10)
@@ -130,37 +122,25 @@ export default function DashboardPage() {
           }
       })
       const nextNum = maxNum + 1
-      // If previous pattern was "T-XX", follow it? Or just simplify to number?
-      // User requested "bbine akharin esme chi boode" (see what last name was).
-      // Simple heuristic: if most tables start with "T-", use "T-".
       const usePrefix = localTables.length > 0 && localTables.some(t => t.table_number.toString().startsWith('T-'))
       const nextTableNumber = usePrefix ? `T-${String(nextNum).padStart(2, '0')}` : nextNum.toString()
-      
-      // If no tables exist, default to T-01
       const finalTableNumber = localTables.length === 0 ? "T-01" : nextTableNumber
-      
-      // 2. Generate QR Token
       const qrToken = `token-${finalTableNumber.toLowerCase()}-${Date.now().toString(36)}`
 
-      // 3. Find a "safe" position (Collision Detection)
-      // Check positions in a grid pattern until free
-      const GRID_STEP = 25 // Slightly larger step for larger tables
+      const GRID_STEP = 25 
       let foundX = 0
       let foundY = 0
       let found = false
       
-      // Search a reasonable grid area (e.g., 10x10)
       for (let row = 0; row < 10; row++) {
           for (let col = 0; col < 10; col++) {
              const testX = col * GRID_STEP
              const testY = row * GRID_STEP
              
-             // Check collision with ANY existing table
-             // Collision radius = ~2.5 (safe margin for 2.2 size)
              const hasCollision = localTables.some(t => {
                  const dx = Math.abs(t.x - testX)
                  const dy = Math.abs(t.y - testY)
-                 return dx < 22 && dy < 22 // 2.2 units * 10
+                 return dx < 22 && dy < 22 
              })
              
              if (!hasCollision) {
@@ -173,13 +153,11 @@ export default function DashboardPage() {
           if (found) break
       }
       
-      // Fallback if full grid is full (unlikely) -> just far right
       if (!found) {
           const rightMost = localTables.reduce((max, t) => Math.max(max, t.x), 0)
           foundX = rightMost + 30
       }
 
-      // 4. Optimistic Update
       const tempId = `temp-${Date.now()}`
       const newTable = {
           id: tempId,
@@ -195,7 +173,6 @@ export default function DashboardPage() {
       
       setLocalTables([...localTables, newTable])
       
-      // 5. Actual Insert
       try {
            if (!restaurantId) throw new Error("Missing Restaurant ID")
            
@@ -217,7 +194,6 @@ export default function DashboardPage() {
             
            if (error) throw error
            
-           // Replace temp table with real one
            setLocalTables(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t))
            toast.success(`Table ${finalTableNumber} added!`)
            
@@ -233,9 +209,8 @@ export default function DashboardPage() {
       
       const reset = calculateDefaultLayout(localTables.map(t => ({
           ...t,
-          layout_data: { x: 0, y: 0 } // Force clear
+          layout_data: { x: 0, y: 0 } 
       })))
-      // Reset dimensions too
       const fullyReset = reset.map(t => ({ ...t, width: 2.2, depth: 2.2 }))
       
       setLocalTables(fullyReset)
@@ -279,12 +254,13 @@ export default function DashboardPage() {
 
        {/* ORDER DRAWER */}
        {selectedTableId && !isEditing && (
-            <CashierOrderDrawer 
+            <OrderDrawer 
                 isOpen={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
                 table={mergedTables.find(t => t.id === selectedTableId)}
                 session={sessions.find(s => s.table_id === selectedTableId)}
                 onCheckout={handleCheckout}
+                role="cashier"
             />
        )}
 
@@ -330,7 +306,6 @@ export default function DashboardPage() {
                         <button 
                             onClick={() => {
                                 setIsEditing(false)
-                                // local changes discarded automatically since we re-init next time
                             }}
                             className="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-xl shadow-lg font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors"
                         >

@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile } from "@/services/userService";
+// We can import specific services if needed, or just keep the logic here for simplicity/unification
 
-export const useCashierData = () => {
+export const useRestaurantData = () => {
   const [tables, setTables] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [restaurantId, setRestaurantId] = useState(null);
 
   // To prevent rapid duplicate fetches
   const timeoutRef = useRef(null);
@@ -20,25 +22,26 @@ export const useCashierData = () => {
 
       // 0. Get Restaurant ID from Profile
       const profile = await getUserProfile(supabase, user.id);
-       
-      const restaurantId = profile?.restaurant_id;
+      
+      const rId = profile?.restaurant_id;
+      setRestaurantId(rId);
 
-      if (!restaurantId) {
-           console.error("No restaurant ID found for cashier");
-           return;
+      if (!rId) {
+          console.error("No restaurant ID found for user");
+          // Optionally handle this state (e.g. empty tables)
+          return;
       }
 
       // 1. Fetch Tables
       const { data: tablesData } = await supabase
         .from("tables")
         .select("*")
-        .eq("restaurant_id", restaurantId)
+        .eq("restaurant_id", rId)
         .order("table_number", { ascending: true });
 
       setTables(tablesData || []);
 
-      // 2. Fetch Sessions & Orders (Active sessions only)
-      // Cashier likely needs to see active sessions to take payment or manage orders.
+      // 2. Fetch Sessions & Orders (Active sessions only -> not closed)
       const { data: sessionsData, error } = await supabase
         .from("sessions")
         .select(
@@ -60,14 +63,14 @@ export const useCashierData = () => {
           )
         `
         )
-        .eq("restaurant_id", restaurantId)
+        .eq("restaurant_id", rId)
         .neq("status", "closed");
 
       if (error) console.error("Session fetch error:", error);
 
       setSessions(sessionsData || []);
     } catch (error) {
-      console.error("Error fetching cashier data:", error);
+      console.error("Error fetching restaurant data:", error);
     } finally {
       setLoading(false);
     }
@@ -79,18 +82,18 @@ export const useCashierData = () => {
 
     // Helper function to debounce fetch
     const handleRealtimeUpdate = (payload) => {
-      console.log(`🔔 Realtime Signal (${payload.eventType})`);
+      // console.log(`🔔 Realtime Signal (${payload.eventType})`);
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
       timeoutRef.current = setTimeout(() => {
-        console.log("⏳ Fetching new data...");
+        // console.log("⏳ Fetching new data...");
         fetchData();
       }, 500);
     };
 
     const channel = supabase
-      .channel("cashier-dashboard-global")
+      .channel("restaurant-dashboard-global")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sessions" },
@@ -114,16 +117,15 @@ export const useCashierData = () => {
     };
   }, [fetchData]);
 
-  // 3. Checkout Logic
+  // 3. Checkout Logic (Shared)
   const handleCheckout = async (sessionId, paymentMethod, amount) => {
       try {
+           // Dynamic import to avoid cycles or heavy loads if unnecessary
            const { cashierService } = await import("@/services/cashierService");
            const result = await cashierService.processPayment(sessionId, paymentMethod, amount);
            
            if (result.success) {
-               // Optimistic update or just let realtime handle it?
-               // Realtime will catch the 'closed' session status and remove it from list.
-               // We can manually refetch to be sure instant feedback.
+               // Optimistic or Refetch
                fetchData();
                return { success: true };
            }
@@ -133,5 +135,5 @@ export const useCashierData = () => {
       }
   };
 
-  return { tables, sessions, loading, restaurantId: tables[0]?.restaurant_id, refetch: fetchData, handleCheckout };
+  return { tables, sessions, loading, restaurantId, refetch: fetchData, handleCheckout };
 };

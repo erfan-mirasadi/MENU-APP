@@ -1,13 +1,13 @@
 "use client";
 
-import { useWaiterData } from "@/app/hooks/useWaiterData";
+import { useRestaurantData } from "@/app/hooks/useRestaurantData";
 import { useState } from "react";
-import { FaLayerGroup, FaRedoAlt } from "react-icons/fa";
-import TableDetailDrawer from "../_components/TableDetailDrawer";
+import { FaLayerGroup } from "react-icons/fa";
+import OrderDrawer from "@/components/shared/OrderDrawer";
 import TableCard from "../_components/TableCard";
 
 export default function WaiterDashboard() {
-  const { tables, sessions, loading } = useWaiterData();
+  const { tables, sessions, loading, handleCheckout } = useRestaurantData();
 
   // State
   const [selectedTable, setSelectedTable] = useState(null);
@@ -24,7 +24,7 @@ export default function WaiterDashboard() {
   const activeCount = sessions.length;
 
   const handleTableClick = (table, session) => {
-    // باز کردن دراور حتی برای میز خالی (شاید بخوای دستی پرش کنی)
+    // Open drawer
     setSelectedTable(table);
     setSelectedSession(session);
     setIsDrawerOpen(true);
@@ -69,7 +69,7 @@ export default function WaiterDashboard() {
                 {tables.length} Tables · Realtime Active
               </p>
             </div>
-            {/* دکمه رفرش مخفی (صرفا بصری) */}
+            {/* Hidden Refresh Button (Visual only) */}
             <div
               className={`w-3 h-3 rounded-full ${
                 pendingCount > 0 ? "bg-green-500 animate-ping" : "bg-gray-700"
@@ -78,7 +78,6 @@ export default function WaiterDashboard() {
           </div>
 
           {/* --- STATUS BAR (FILTER-LOOK) --- */}
-          {/* این نوار بالا سریع نشون میده چه خبره */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {/* ALERT PILL */}
             {alertCount > 0 && (
@@ -88,7 +87,7 @@ export default function WaiterDashboard() {
               </div>
             )}
 
-            {/* PENDING PILL (مهمترین) */}
+            {/* PENDING PILL (Most Important) */}
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
                 pendingCount > 0
@@ -117,7 +116,6 @@ export default function WaiterDashboard() {
             <p className="text-gray-500">No tables found.</p>
           </div>
         ) : (
-          // گرید ریسپانسیو عالی برای موبایل (2 ستون) و تبلت (3-4 ستون)
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {tables.map((table) => {
               const activeSession = sessions.find(
@@ -137,12 +135,15 @@ export default function WaiterDashboard() {
       </div>
 
       {/* --- DRAWER --- */}
-      <TableDetailDrawer
+      <OrderDrawer
         isOpen={isDrawerOpen}
         onClose={handleCloseDrawer}
         table={selectedTable}
         session={activeDrawerSession}
+        role="waiter"
+        onCheckout={handleCheckout}
       />
     </div>
   );
 }
+
