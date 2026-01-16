@@ -14,6 +14,7 @@ import DrawerEmptyState from "./DrawerEmptyState";
 import PendingOrderList from "./PendingOrderList";
 import ConfirmedOrderList from "./ConfirmedOrderList";
 import ActiveOrderList from "./ActiveOrderList";
+import ReceiptTemplate from "../ReceiptTemplate";
 
 // Shared Modals (Outside of this folder)
 import MenuModal from "../MenuModal";
@@ -22,7 +23,8 @@ import VoidReasonModal from "../VoidReasonModal";
 
 export default function OrderDrawer({ 
     table, 
-    session, 
+    session,
+    restaurant, 
     isOpen, 
     onClose, 
     role = "waiter", 
@@ -59,13 +61,22 @@ export default function OrderDrawer({
                 {role === 'cashier' && (
                     <div className="bg-[#252836] p-2 flex justify-end px-4 border-b border-white/5">
                         <button 
-                            onClick={() => toast('Print feature coming soon', { icon: '🖨️' })}
+                            onClick={() => window.print()}
                             className="flex items-center gap-2 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-gray-300 transition-colors"
                         >
                             <FaPrint /> Print Bill
                         </button>
                     </div>
                 )}
+
+                {/* Hidden Receipt Template (Visible only in print) */}
+                <ReceiptTemplate 
+                    table={table}
+                    session={session}
+                    items={[...confirmedItems, ...activeItems]}
+                    total={totalAmount}
+                    restaurant={restaurant}
+                />
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-8 bg-[#1F1D2B]">
                     {!session ? (

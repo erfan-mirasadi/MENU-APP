@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile } from "@/services/userService";
+import { getRestaurantById } from "@/services/restaurantService";
 // We can import specific services if needed, or just keep the logic here for simplicity/unification
 
 export const useRestaurantData = () => {
@@ -8,6 +9,8 @@ export const useRestaurantData = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [restaurantId, setRestaurantId] = useState(null);
+
+  const [restaurant, setRestaurant] = useState(null);
 
   // To prevent rapid duplicate fetches
   const timeoutRef = useRef(null);
@@ -31,6 +34,10 @@ export const useRestaurantData = () => {
           // Optionally handle this state (e.g. empty tables)
           return;
       }
+
+      // 0.5 Fetch Restaurant Details (Using Service)
+      const restaurantData = await getRestaurantById(rId);
+      setRestaurant(restaurantData);
 
       // 1. Fetch Tables
       const { data: tablesData } = await supabase
@@ -135,5 +142,5 @@ export const useRestaurantData = () => {
       }
   };
 
-  return { tables, sessions, loading, restaurantId, refetch: fetchData, handleCheckout };
+  return { tables, sessions, loading, restaurantId, restaurant, refetch: fetchData, handleCheckout };
 };

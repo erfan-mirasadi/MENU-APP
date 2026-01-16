@@ -13,7 +13,7 @@ import OrderDrawer from '@/components/shared/OrderDrawer'
 export default function DashboardPage() {
   const router = useRouter()
   // unified hook
-  const { tables, sessions, loading, restaurantId, refetch, handleCheckout } = useRestaurantData()
+  const { tables, sessions, loading, restaurantId, restaurant, refetch, handleCheckout } = useRestaurantData()
   const [isEditing, setIsEditing] = useState(false)
   
   // Selection State
@@ -261,6 +261,7 @@ export default function DashboardPage() {
                 session={sessions.find(s => s.table_id === selectedTableId)}
                 onCheckout={handleCheckout}
                 role="cashier"
+                restaurant={restaurant}
             />
        )}
 
