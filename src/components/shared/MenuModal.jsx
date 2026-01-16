@@ -84,7 +84,7 @@ export default function MenuModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#1F1D2B] animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[60] flex flex-col  bg-[#1F1D2B] animate-in slide-in-from-bottom duration-300">
       {/* HEADER */}
       <div className="p-4 bg-[#252836] border-b border-white/10 flex gap-3 items-center shadow-md shrink-0 safe-area-top">
         <div className="relative flex-1">
@@ -137,7 +137,7 @@ export default function MenuModal({
             Loading Menu...
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 pb-20">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pb-20">
             {filteredProducts.map((product) => {
               const qty = getQty(product.id);
               return (

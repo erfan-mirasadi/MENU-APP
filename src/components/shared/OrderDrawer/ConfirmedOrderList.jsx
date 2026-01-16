@@ -1,6 +1,7 @@
-import { FaFire, FaUtensils, FaReceipt } from "react-icons/fa";
+import { FaFire, FaUtensils } from "react-icons/fa";
 import OrderSection from "./OrderSection";
 import SwipeableOrderItem from "./SwipeableOrderItem";
+import Loader from "@/components/ui/Loader";
 
 export default function ConfirmedOrderList({ 
     items, 
@@ -12,13 +13,13 @@ export default function ConfirmedOrderList({
 }) {
     if (items.length === 0) return null;
 
-    // CASHIER VIEW (Actionable)
-    if (role === 'cashier') {
+    // CASHIER & WAITER VIEW (Actionable)
+    if (role === 'cashier' || role === 'waiter') {
         return (
              <OrderSection
-                title="Ready for Prep (Waiter Confirmed)"
+                title={role === 'waiter' ? "Ready for Prep" : "Ready for Prep (Waiter Confirmed)"}
                 count={items.length}
-                accentColor="orange"
+                accentColor="blue"
                 icon={<FaFire />}
              >
                 <div className="space-y-3">
@@ -28,9 +29,19 @@ export default function ConfirmedOrderList({
                     <button
                         onClick={onStartPreparing}
                         disabled={loading}
-                        className="w-full mt-4 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-900/40 active:scale-95 transition-all"
+                        className={`w-full mt-4 py-4 ${
+                            loading 
+                            ? "bg-blue-600/80 cursor-wait"
+                            : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
+                        } text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40 active:scale-95 transition-all`}
                     >
-                        <FaUtensils className="text-xl" /> START PREPARING
+                        {loading ? (
+                            <Loader active={true} variant="inline" className="h-6 w-6" />
+                        ) : (
+                            <>
+                                <FaUtensils className="text-xl" /> START PREPARING
+                            </>
+                        )}
                     </button>
                 </div>
              </OrderSection>

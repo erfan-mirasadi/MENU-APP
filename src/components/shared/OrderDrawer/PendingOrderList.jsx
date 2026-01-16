@@ -1,6 +1,7 @@
 import { FaClock, FaCheck } from "react-icons/fa";
 import OrderSection from "./OrderSection";
 import SwipeableOrderItem from "./SwipeableOrderItem";
+import Loader from "@/components/ui/Loader";
 
 export default function PendingOrderList({ 
     items, 
@@ -34,9 +35,17 @@ export default function PendingOrderList({
                     <button
                         onClick={onConfirm}
                         disabled={loading}
-                        className="w-full mt-4 py-4 bg-[#ea7c69] hover:bg-[#d96b58] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30"
+                        className={`w-full mt-4 py-4 ${
+                            loading ? "bg-[#ea7c69]/80 cursor-wait" : "bg-[#ea7c69] hover:bg-[#d96b58]"
+                        } text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30`}
                     >
-                        <FaCheck className="text-xl" /> CONFIRM & SEND TO KITCHEN
+                        {loading ? (
+                            <Loader active={true} variant="inline" className="h-6 w-6" />
+                        ) : (
+                            <>
+                                <FaCheck className="text-xl" /> CONFIRM & SEND TO KITCHEN
+                            </>
+                        )}
                     </button>
                 </div>
             </OrderSection>
@@ -58,9 +67,18 @@ export default function PendingOrderList({
                     ))}
                     <button
                         onClick={onConfirm}
-                        className="w-full mt-4 py-4 bg-[#ea7c69] hover:bg-[#d96b58] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30"
+                        disabled={loading}
+                        className={`w-full mt-4 py-4 ${
+                            loading ? "bg-[#ea7c69]/80 cursor-wait" : "bg-[#ea7c69] hover:bg-[#d96b58]"
+                        } text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30`}
                     >
-                        <FaCheck className="text-xl" /> SEND TO KITCHEN
+                         {loading ? (
+                            <Loader active={true} variant="inline" className="h-6 w-6" />
+                        ) : (
+                            <>
+                                <FaCheck className="text-xl" /> SEND TO KITCHEN
+                            </>
+                        )}
                     </button>
                 </div>
             </OrderSection>

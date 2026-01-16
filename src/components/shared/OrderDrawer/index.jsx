@@ -101,11 +101,12 @@ export default function OrderDrawer({
 
                             {/* 3. Active/Served Items (Both) */}
                             <ActiveOrderList
-                                // Waiter: Merged (Confirmed + Active)
-                                items={role === 'waiter' ? confirmedItems.concat(activeItems) : activeItems}
+                                // Waiter: Active Only (Confirmed now handled separately above)
+                                items={activeItems}
                                 role={role}
                                 isBatchEditing={isBatchEditing}
                                 batchItems={batchItems}
+                                loading={loading}
                                 onEditOrder={actions.handleStartBatchEdit}
                                 onCancelEdit={actions.handleCancelBatchEdit}
                                 onSaveEdit={actions.handleExecuteBatch}

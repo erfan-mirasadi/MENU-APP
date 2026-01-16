@@ -25,8 +25,18 @@ const styles = `
   }
 `;
 
-export default function Loader({ className = "", active = true }) {
+export default function Loader({ className = "", active = true, variant = "overlay" }) {
   if (!active) return null;
+
+  if (variant === "inline") {
+      return (
+          <div className={`flex items-center justify-center ${className}`}>
+             <div className="relative w-5 h-5 flex items-center justify-center">
+                <div className="absolute inset-0 border-2 border-t-white/80 border-r-white/20 border-b-white/20 border-l-white/50 rounded-full animate-spin duration-1000" />
+             </div>
+          </div>
+      );
+  }
 
   return (
     <>

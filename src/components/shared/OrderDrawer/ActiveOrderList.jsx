@@ -1,6 +1,7 @@
 import { FaReceipt, FaCheck, FaPen } from "react-icons/fa";
 import OrderSection from "./OrderSection";
 import SwipeableOrderItem from "./SwipeableOrderItem";
+import Loader from "@/components/ui/Loader";
 
 export default function ActiveOrderList({ 
     items, 
@@ -11,13 +12,30 @@ export default function ActiveOrderList({
     onSaveEdit,
     batchItems,
     onUpdateBatchQty,
-    onDeleteBatchItem,
     onUpdateQty,
-    onDelete
+    onDelete,
+    loading
 }) {
     if (items.length === 0) return null;
 
     // Unified View
+    // GROUPING LOGIC: Aggregate items by product_id
+    const groupedItems = Object.values(items.reduce((acc, item) => {
+        const key = item.product_id || item.product?.id;
+        if (!acc[key]) {
+            acc[key] = { 
+                ...item, 
+                quantity: 0, 
+                ids: [], // Keep track of all real IDs in this group
+                // Use a stable virtual ID for the UI key
+                virtualId: `group-${key}` 
+            };
+        }
+        acc[key].quantity += item.quantity;
+        acc[key].ids.push(item.id);
+        return acc;
+    }, {}));
+
     const getTitle = () => {
         if (role === 'waiter') return "Sent to Kitchen";
         return "In Kitchen / Served";
@@ -36,7 +54,7 @@ export default function ActiveOrderList({
     return (
         <OrderSection
             title={getTitle()}
-            count={items.length}
+            count={groupedItems.length} // Count unique groups now
             accentColor={getAccentColor()}
             icon={getIcon()}
             action={
@@ -59,7 +77,7 @@ export default function ActiveOrderList({
                 <div className="space-y-3">
                     {batchItems.map(item => (
                         <SwipeableOrderItem
-                            key={item.id}
+                            key={item.virtualId || item.id}
                             item={item}
                             isPending={false}
                             onUpdateQty={onUpdateBatchQty}
@@ -70,13 +88,21 @@ export default function ActiveOrderList({
                 </div>
                 <div className="flex gap-3">
                     <button onClick={onCancelEdit} className="flex-1 py-3 bg-gray-700 text-gray-300 font-bold rounded-xl">Cancel</button>
-                    <button onClick={onSaveEdit} className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-900/40">Save Changes</button>
+                    <button 
+                        onClick={onSaveEdit} 
+                        disabled={loading}
+                        className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-900/40 flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                             <Loader active={true} variant="inline" className="h-5 w-5" />
+                        ) : "Save Changes"}
+                    </button>
                 </div>
             </div>
         ) : (
             <div className="space-y-3 opacity-90">
-                {items.map(item => (
-                    <SwipeableOrderItem key={item.id} item={item} isPending={false} readOnly={true} />
+                {groupedItems.map(item => (
+                    <SwipeableOrderItem key={item.virtualId} item={item} isPending={false} readOnly={true} />
                 ))}
             </div>
         )}
