@@ -34,7 +34,7 @@ const OrderReportTable = ({ orders, loading, filter }) => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-[#ABBBC2] text-sm border-b border-[#393C49]">
-                <th className="py-4 font-semibold pl-4">Customer</th>
+                <th className="py-4 font-semibold pl-4">Table No</th>
                 <th className="py-4 font-semibold">Menu</th>
                 <th className="py-4 font-semibold">Total Payment</th>
                 <th className="py-4 font-semibold">Status</th>
@@ -45,7 +45,7 @@ const OrderReportTable = ({ orders, loading, filter }) => {
                 // Skeleton Rows
                 Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[#393C49] animate-pulse">
-                        <td className="py-4 pl-4"><div className="h-4 bg-gray-700 rounded w-24"></div></td>
+                        <td className="py-4 pl-4"><div className="h-4 bg-gray-700 rounded w-16"></div></td>
                         <td className="py-4"><div className="h-4 bg-gray-700 rounded w-32"></div></td>
                         <td className="py-4"><div className="h-4 bg-gray-700 rounded w-16"></div></td>
                         <td className="py-4"><div className="h-6 bg-gray-700 rounded w-20"></div></td>
@@ -58,12 +58,8 @@ const OrderReportTable = ({ orders, loading, filter }) => {
               ) : (
                   orders.map((order) => (
                     <tr key={order.id} className="border-b border-[#393C49] hover:bg-[#252836]/50 transition-colors">
-                      <td className="py-4 pl-4 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-600 overflow-hidden flex items-center justify-center text-xs font-bold text-white">
-                           {/* Avatar Placeholder: Initials */}
-                           {order.customer.charAt(0)}
-                        </div>
-                        <span className="text-[#E0E6E9]">{order.customer}</span>
+                      <td className="py-4 pl-4 text-[#E0E6E9] font-bold">
+                        {order.tableNo}
                       </td>
                       <td className="py-4 text-[#E0E6E9]">{order.menu}</td>
                       <td className="py-4 text-[#E0E6E9]">{formatCurrency(order.total)}</td>
