@@ -1,14 +1,13 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useState, useRef } from "react";
 import { getTableByNumber } from "@/services/tableService";
 import { getActiveSession, createSession } from "@/services/sessionService";
 import {
-  getOrderItems,
   addOrderItem,
   updateOrderItemQuantity,
   removeOrderItem,
   submitDraftOrders,
 } from "@/services/orderService";
+import { useClientSession } from "./useClientSession";
 
 export const useCart = (tableNumberFromUrl, restaurantId) => {
   const [cartItems, setCartItems] = useState([]);
@@ -64,69 +63,22 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
     initializeSession();
   }, [tableNumberFromUrl, restaurantId]);
 
-  // تابع فچ کردن با لاگ دقیق
-  const fetchCartItems = useCallback(async (triggeredBy = "Manual") => {
-    const currentSessionId = sessionRef.current;
-    if (!currentSessionId) return;
 
-    // console.log(`📥 Fetching Items [Trigger: ${triggeredBy}]...`);
 
-    // یک تاخیر کوچک برای اطمینان از اینکه دیتابیس آپدیت شده
-    if (triggeredBy === "Realtime") {
-      await new Promise((r) => setTimeout(r, 200));
-    }
+  // 2. Use Optimized Client Session Hook
+  const { orders: realtimeOrders, sessionData } = useClientSession(sessionId);
 
-    const data = await getOrderItems(currentSessionId);
-
-    console.log(`📊 Cart Data Updated (${data.length} items):`, data);
-    setCartItems(data);
-    setIsLoading(false);
-  }, []);
-
-  // 2. Fetch Cart Items & REALTIME SUBSCRIPTION
+  // Sync realtime orders to local cartItems state (handling optimistic updates is tricky, 
+  // but usually we let server state override local state when it arrives)
   useEffect(() => {
-    if (!sessionId) return;
+      if (realtimeOrders) {
+          setCartItems(realtimeOrders);
+          setIsLoading(false);
+      }
+  }, [realtimeOrders]);
 
-    // بار اول فچ کن
-    fetchCartItems("Initial Load");
+  // (Removed manual fetchCartItems and manual subscription)
 
-    console.log("🔌 Subscribing to Realtime channel for session:", sessionId);
-
-    const channel = supabase
-      .channel(`room-${sessionId}`) // اسم کانال ساده‌تر
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // INSERT, UPDATE, DELETE
-          schema: "public",
-          table: "order_items",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        (payload) => {
-          console.log(
-            "🔔 Realtime Event:",
-            payload.eventType,
-            payload.new || payload.old
-          );
-
-          // اگر آیتم جدید اضافه شده، دستی به استیت اضافه کن تا منتظر فچ نمونی (برای تست)
-          if (payload.eventType === "INSERT") {
-            console.log("⚡ Fast Update: Fetching new data...");
-            fetchCartItems("Realtime");
-          } else {
-            fetchCartItems("Realtime");
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Subscription Status: ${status}`);
-      });
-
-    return () => {
-      console.log("🔌 Unsubscribing...");
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId, fetchCartItems]);
 
   // --- ACTIONS ---
 
@@ -185,7 +137,7 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
       }
     } catch (error) {
       console.error("❌ Add Error:", error);
-      fetchCartItems("Error Recovery");
+      console.log("Error, strictly relying on realtime to recover");
     }
   };
 
@@ -213,7 +165,7 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
       }
     } catch (error) {
       console.error("❌ Decrease Error:", error);
-      fetchCartItems("Error Recovery");
+      console.log("Error, strictly relying on realtime to recover");
     }
   };
 

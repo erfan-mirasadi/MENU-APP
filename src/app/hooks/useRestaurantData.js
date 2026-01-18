@@ -2,44 +2,52 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile } from "@/services/userService";
 import { getRestaurantById } from "@/services/restaurantService";
-// We can import specific services if needed, or just keep the logic here for simplicity/unification
 
 export const useRestaurantData = () => {
   const [tables, setTables] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [restaurantId, setRestaurantId] = useState(null);
-
   const [restaurant, setRestaurant] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // To prevent rapid duplicate fetches
+  // Use a Ref to access the latest sessions inside the realtime callback without re-subscribing
+  const sessionsRef = useRef(sessions);
   const timeoutRef = useRef(null);
+
+  // Keep Ref updated
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   // 1. Fetch Data
   const fetchData = useCallback(async () => {
     try {
+      console.log("🔄 Fetching Data..."); 
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 0. Get Restaurant ID from Profile
-      const profile = await getUserProfile(supabase, user.id);
-      
-      const rId = profile?.restaurant_id;
-      setRestaurantId(rId);
+      // Ensure we have the restaurant ID
+      let rId = restaurantId;
+      if (!rId) {
+        const profile = await getUserProfile(supabase, user.id);
+        rId = profile?.restaurant_id;
+        setRestaurantId(rId);
+
+        if (rId) {
+            const restaurantData = await getRestaurantById(rId);
+            setRestaurant(restaurantData);
+        }
+      }
 
       if (!rId) {
-          console.error("No restaurant ID found for user");
-          // Optionally handle this state (e.g. empty tables)
+          console.error("❌ No restaurant ID found");
           return;
       }
 
-      // 0.5 Fetch Restaurant Details (Using Service)
-      const restaurantData = await getRestaurantById(rId);
-      setRestaurant(restaurantData);
-
-      // 1. Fetch Tables
+      // Fetch Tables
       const { data: tablesData } = await supabase
         .from("tables")
         .select("*")
@@ -48,97 +56,126 @@ export const useRestaurantData = () => {
 
       setTables(tablesData || []);
 
-      // 2. Fetch Sessions & Orders (Active sessions only -> not closed)
+      // Fetch Sessions
       const { data: sessionsData, error } = await supabase
         .from("sessions")
-        .select(
-          `
+        .select(`
           *,
           bills (*),
           order_items (
-            id,
-            status,
-            quantity,
-            unit_price_at_order,
-            created_at,
-            product_id,
+            id, status, quantity, unit_price_at_order, created_at, product_id, session_id,
             product:products ( title, price, image_url ) 
           ),
-          service_requests (
-            id,
-            status,
-            request_type
-          )
-        `
-        )
+          service_requests ( id, status, request_type )
+        `)
         .eq("restaurant_id", rId)
         .neq("status", "closed");
 
       if (error) console.error("Session fetch error:", error);
 
       setSessions(sessionsData || []);
+      // console.log(`✅ Data Updated: ${sessionsData?.length || 0} sessions loaded`);
+
     } catch (error) {
       console.error("Error fetching restaurant data:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [restaurantId]);
 
-  // 2. Setup Realtime Listener with DELAY
+  // 2. Initial Fetch
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
 
-    // Helper function to debounce fetch
-    const handleRealtimeUpdate = (payload) => {
-      // console.log(`🔔 Realtime Signal (${payload.eventType})`);
+  // 3. Setup Realtime Listener (High-Performance Version)
+  useEffect(() => {
+    if (!restaurantId) return;
 
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+     console.log("🔌 Subscribing to Restaurant Channel...");
+    const channel = supabase.channel(`restaurant-${restaurantId}`);
 
-      timeoutRef.current = setTimeout(() => {
-        // console.log("⏳ Fetching new data...");
-        fetchData();
-      }, 500);
+    const handleUpdate = () => {
+       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+       timeoutRef.current = setTimeout(() => {
+           fetchData();
+       }, 500); // 500ms debounce
     };
 
-    const channel = supabase
-      .channel("restaurant-dashboard-global")
+    channel
+      // Subscription 1 (Table Activity): Only INSERT and UPDATE for this restaurant
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "sessions" },
-        handleRealtimeUpdate
+        { 
+            event: "INSERT", 
+            schema: "public", 
+            table: "sessions", 
+            filter: `restaurant_id=eq.${restaurantId}` 
+        },
+        handleUpdate
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "order_items" },
-        handleRealtimeUpdate
+        { 
+            event: "UPDATE", 
+            schema: "public", 
+            table: "sessions", 
+            filter: `restaurant_id=eq.${restaurantId}` 
+        },
+        handleUpdate
       )
+      
+      // Subscription 2 (Requests): Only New Requests (INSERT)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "service_requests" },
-        handleRealtimeUpdate
+        { 
+            event: "INSERT", 
+            schema: "public", 
+            table: "service_requests", 
+            filter: `restaurant_id=eq.${restaurantId}` 
+        },
+        handleUpdate
       )
+
+      // Subscription 3 (Orders): INSERT, UPDATE, and DELETE
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "bills" },
-        handleRealtimeUpdate
+        { 
+             event: "*", // Listen to all changes (including DELETE)
+             schema: "public", 
+             table: "order_items" 
+        },
+        (payload) => {
+             const currentSessions = sessionsRef.current;
+             const sessionId = payload.new?.session_id || payload.old?.session_id;
+             
+             const relevantSession = currentSessions.find(s => s.id === sessionId);
+             if (relevantSession) handleUpdate();
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+        } else {
+          setIsConnected(false);
+        }
+      });
 
     return () => {
+       console.log("🧹 Cleanup: Unsubscribing");
+      setIsConnected(false);
       supabase.removeChannel(channel);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [fetchData]);
+  }, [restaurantId, fetchData]); // Dependencies: only external IDs and stable fetch function
 
-  // 3. Checkout Logic (Shared)
+  // 4. Checkout Logic
   const handleCheckout = async (sessionId, type, data) => {
       try {
-           // Dynamic import to avoid cycles or heavy loads if unnecessary
            const { cashierService } = await import("@/services/cashierService");
            const result = await cashierService.processPayment(sessionId, type, data);
            
            if (result.success) {
-               // Optimistic or Refetch
                fetchData();
                return { success: true };
            }
@@ -148,5 +185,5 @@ export const useRestaurantData = () => {
       }
   };
 
-  return { tables, sessions, loading, restaurantId, restaurant, refetch: fetchData, handleCheckout };
+  return { tables, sessions, loading, restaurantId, restaurant, refetch: fetchData, handleCheckout, isConnected };
 };

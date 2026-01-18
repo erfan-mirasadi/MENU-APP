@@ -13,7 +13,7 @@ import OrderDrawer from '@/components/shared/OrderDrawer'
 export default function DashboardPage() {
   const router = useRouter()
   // unified hook
-  const { tables, sessions, loading, restaurantId, restaurant, refetch, handleCheckout } = useRestaurantData()
+  const { tables, sessions, loading, restaurantId, restaurant, refetch, handleCheckout, isConnected } = useRestaurantData()
   const [isEditing, setIsEditing] = useState(false)
   
   // Selection State
@@ -279,6 +279,11 @@ export default function DashboardPage() {
                {/* Stats */}
               {!isEditing && (
                   <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/20 text-sm font-medium flex items-center gap-3">
+                     <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                        <span className="text-gray-700">{isConnected ? 'System Online' : 'Offline'}</span>
+                     </div>
+                     <div className="w-px h-4 bg-gray-200"></div>
                      <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                         <span className="text-gray-700">{mergedTables.filter(t => t.status !== 'free').length} Occupied</span>

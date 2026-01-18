@@ -7,7 +7,7 @@ import OrderDrawer from "@/components/shared/OrderDrawer";
 import TableCard from "../_components/TableCard";
 
 export default function WaiterDashboard() {
-  const { tables, sessions, loading, handleCheckout } = useRestaurantData();
+  const { tables, sessions, loading, handleCheckout, isConnected } = useRestaurantData();
 
   // State
   const [selectedTable, setSelectedTable] = useState(null);
@@ -69,12 +69,16 @@ export default function WaiterDashboard() {
                 {tables.length} Tables · Realtime Active
               </p>
             </div>
-            {/* Hidden Refresh Button (Visual only) */}
-            <div
-              className={`w-3 h-3 rounded-full ${
-                pendingCount > 0 ? "bg-green-500 animate-ping" : "bg-gray-700"
-              }`}
-            />
+            {/* Realtime Status Indicator */}
+            <div className="flex items-center gap-2">
+               <span className={`text-[10px] font-bold uppercase tracking-wider ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {isConnected ? 'Live' : 'Offline'}
+               </span>
+               <div className="relative flex h-3 w-3">
+                  {isConnected && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
+                  <span className={`relative inline-flex rounded-full h-3 w-3 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+               </div>
+            </div>
           </div>
 
           {/* --- STATUS BAR (FILTER-LOOK) --- */}
