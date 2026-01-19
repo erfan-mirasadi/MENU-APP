@@ -396,13 +396,21 @@ export const reportService = {
 
       if (error) return [];
 
-      return data.map(log => ({
-          time: new Date(log.created_at).toLocaleString(),
-          staff: "Staff " + (log.user_id?.slice(0,4) || ""), // Placeholder
-          item: log.details?.snapshot?.product || log.details?.snapshot?.product_title || "Unknown Item",
-          reason: log.details?.reason || "No Reason",
-          action: log.action,
-          value: (parseFloat(log.details?.snapshot?.price) || 0) * (log.details?.voided_quantity || log.details?.snapshot?.quantity || 1)
-      }));
+      return data.map(log => {
+          let rawItem = log.details?.snapshot?.product || log.details?.snapshot?.product_title || "Unknown Item";
+          // If rawItem is the localization object {en, tr...}, take English
+          if (rawItem && typeof rawItem === 'object') {
+              rawItem = rawItem.en || Object.values(rawItem)[0] || "Unknown Item";
+          }
+
+          return {
+              time: new Date(log.created_at).toLocaleString(),
+              staff: "Staff " + (log.user_id?.slice(0,4) || ""), // Placeholder
+              item: rawItem,
+              reason: log.details?.reason || "No Reason",
+              action: log.action,
+              value: (parseFloat(log.details?.snapshot?.price) || 0) * (log.details?.voided_quantity || log.details?.snapshot?.quantity || 1)
+          };
+      });
   }
 };

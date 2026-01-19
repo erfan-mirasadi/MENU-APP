@@ -4,6 +4,7 @@ import { useRestaurantData } from "@/app/hooks/useRestaurantData";
 import { useState } from "react";
 import { FaLayerGroup } from "react-icons/fa";
 import OrderDrawer from "@/components/shared/OrderDrawer";
+import OfflineAlert from "@/components/shared/OfflineAlert";
 import TableCard from "../_components/TableCard";
 
 export default function WaiterDashboard() {
@@ -239,6 +240,9 @@ export default function WaiterDashboard() {
           </div>
         )}
       </div>
+
+      {/* --- OFFLINE ALERT --- */}
+      <OfflineAlert isConnected={isConnected} />
 
       {/* --- DRAWER --- */}
       <OrderDrawer

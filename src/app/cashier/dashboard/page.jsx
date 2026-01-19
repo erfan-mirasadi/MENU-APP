@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { RiEdit2Line, RiSave3Line, RiCloseLine, RiRestartLine, RiDragMove2Line, RiShapeLine, RiAddLine } from 'react-icons/ri'
 import { useRouter } from 'next/navigation'
 import OrderDrawer from '@/components/shared/OrderDrawer'
+import OfflineAlert from "@/components/shared/OfflineAlert";
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -372,6 +373,9 @@ export default function DashboardPage() {
                 onTransfer={handleEnterTransferMode}
             />
        )}
+
+      {/* --- OFFLINE ALERT --- */}
+      <OfflineAlert isConnected={isConnected} />
 
       {/* TRANSFER MODE BANNER */}
       {isTransferMode && (
