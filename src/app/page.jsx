@@ -14,7 +14,7 @@ import {
 } from "react-icons/ri";
 
 export const metadata = {
-  title: "Menu 3D | The Future of Dining",
+  title: "Menu 3D",
   description: "Experience the next generation of restaurant dining with our interactive 3D menu, seamless POS integration, and real-time waiter management.",
 };
 
@@ -63,7 +63,7 @@ export default function Home() {
           </Link>
 
           {/* 3D Mockup Visual (CSS only) */}
-          <div className="w-full max-w-3xl aspect-video relative mt-8 perspective-1000">
+          <div className="w-full max-w-4xl aspect-video relative mt-4 perspective-1000">
              <div className="w-full h-full backdrop-filter rounded-4xl border border-white/5 shadow-xl transform rotate-x-6 hover:rotate-x-0 transition-all duration-700 ease-out p-2 flex items-center justify-center overflow-hidden relative">
                 
                 {/* Background Logo Texture */}
@@ -72,7 +72,6 @@ export default function Home() {
                     src="/logo.png" 
                     alt="Card Background" 
                     fill 
-                    className="object-cover"
                   />
                 </div>
 
