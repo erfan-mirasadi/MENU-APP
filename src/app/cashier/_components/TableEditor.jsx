@@ -1,9 +1,9 @@
 'use client'
 import { Canvas, useThree } from '@react-three/fiber'
-import { MapControls, OrthographicCamera, Environment, Text, useCursor } from '@react-three/drei'
+import { MapControls, Environment, useCursor } from '@react-three/drei'
 import { useState, useRef, useEffect } from 'react'
-import { useDrag } from '@use-gesture/react'
 import * as THREE from 'three'
+import { MapCamera, MapFloor, TableVisual } from './MapShared'
 
 function ResizeHandle({ position, direction, onResizeStart }) {
     const [hovered, setHovered] = useState(false)
@@ -185,8 +185,8 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                 ref={orbitRef}
                 enableRotate={false} 
                 enableZoom={true} 
-                minZoom={10} 
-                maxZoom={50}
+                minDistance={70} 
+                maxDistance={200}
                 dampingFactor={0.05}
                 makeDefault
             />
@@ -198,12 +198,10 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                 const w = table.width || 1.2
                 const d = table.depth || 1.2
                 
-                // Color logic
-                let color = '#ffffff' // free
-                if(table.status === 'ordering') color = '#f97316'
-                if(table.status === 'waiting_payment') color = '#22c55e'
+                // Color logic for Editor: Simple feedback, no status
+                let color = '#FDFBF7' // Creamy White Default
                 if(isSelected) color = '#3b82f6'
-                if(isDragging) color = '#60a5fa' // lighter blue while dragging
+                if(isDragging) color = '#60a5fa' 
 
                 return (
                     <group 
@@ -211,27 +209,19 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                         position={[table.x/10, 0.4, table.y/10]}
                         ref={el => tableRefs.current[table.id] = el}
                     >
-                        <mesh
+                        <group
                             onPointerDown={(e) => handleTablePointerDown(e, table.id)}
                             onPointerOver={() => setHoveredId(table.id)}
                             onPointerOut={() => setHoveredId(null)}
                         >
-                             <boxGeometry args={[w, 0.8, d]} />
-                             <meshStandardMaterial color={color} />
-                             <Text 
-                                position={[0, 0.41, 0]} 
-                                rotation={[-Math.PI / 2, 0, 0]}
-                                fontSize={Math.min(w, d) * 0.35} 
-                                font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff"
-                                color="#1f2937" // Gray-800 for a softer print look
-                                anchorX="center"
-                                anchorY="middle"
-                                maxWidth={w * 0.8}
-                                letterSpacing={-0.05}
-                             >
-                                {table.table_number}
-                             </Text>
-                        </mesh>
+                             {/* Shared Table Visual */}
+                             <TableVisual 
+                                width={w} 
+                                depth={d} 
+                                tableNumber={table.table_number} 
+                                color={color}
+                             />
+                        </group>
                         
                         {/* Handles - Always show if Selected (Unified Mode) */}
                         {isSelected && !draggingId && (
@@ -245,8 +235,8 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                             </>
                         )}
 
-                        {/* Shadow/Selection Plane */}
-                        <mesh position={[0,-0.39,0]} rotation={[-Math.PI/2,0,0]}>
+                        {/* Shadow/Selection Plane - Matches RestaurantMap style */}
+                        <mesh position={[0.15, -0.39, 0.15]} rotation={[-Math.PI/2,0,0]}>
                             <planeGeometry args={[w+0.2, d+0.2]} />
                             <meshBasicMaterial color={isSelected ? "#3b82f6" : "#000000"} opacity={isSelected?0.3:0.15} transparent />
                         </mesh>
@@ -283,19 +273,10 @@ function SceneContent({ tables, onUpdate, selectedId, onSelect }) {
                 </mesh>
             )}
 
-            {/* Permanent Floor */}
-            <mesh 
-                rotation={[-Math.PI / 2, 0, 0]} 
-                position={[0, -0.4, 0]} 
-                receiveShadow
-                onPointerDown={(e) => {
-                    e.stopPropagation()
-                    onSelect(null)
-                }}
-            >
-                <planeGeometry args={[1000, 1000]} />
-                <meshStandardMaterial color="#f3f4f6" />
-            </mesh>
+            {/* Shared Permanent Floor */}
+             <MapFloor />
+             
+            {/* Grid - Subtler or removed for Cozy feel - Adding it very subtle */}
             <gridHelper args={[1000, 50, '#e5e7eb', '#e5e7eb']} position={[0, -0.39, 0]} />
         </>
     )
@@ -314,11 +295,12 @@ export default function TableEditor({ tables, onTablesUpdate, onSelectTable, sel
     return (
         <Canvas shadows dpr={[1, 2]} onPointerMissed={() => onSelectTable(null)}>
              <color attach="background" args={['#f3f4f6']} />
-             <ambientLight intensity={0.6} />
-             <directionalLight position={[10, 20, 10]} intensity={1} castShadow />
-             <Environment preset="city" />
+             <ambientLight intensity={0.7} />
+             <directionalLight position={[10, 20, 10]} intensity={1.2} castShadow />
+             <Environment preset="warehouse" />
              
-             <OrthographicCamera makeDefault position={[50, 50, 50]} zoom={25} near={-100} far={200} />
+             {/* Shared Perspective Camera */}
+             <MapCamera />
              
              <SceneContent 
                 tables={tables} 

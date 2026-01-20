@@ -63,7 +63,7 @@ export const useRestaurantData = () => {
           *,
           bills (*),
           order_items (
-            id, status, quantity, unit_price_at_order, created_at, product_id, session_id,
+            id, status, quantity, unit_price_at_order, created_at, product_id, session_id, added_by_guest_id,
             product:products ( title, price, image_url ) 
           ),
           service_requests ( id, status, request_type )

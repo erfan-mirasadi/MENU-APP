@@ -90,6 +90,8 @@ export default function DashboardPage() {
        return {
          ...table,
          status: computedStatus,
+         active_orders: activeSession?.order_items,
+         session: activeSession,
          width: table.layout_data?.width || 2.2,
          depth: table.layout_data?.depth || 2.2,
          x: table.layout_data?.x || 0,
