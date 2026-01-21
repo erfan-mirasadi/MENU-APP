@@ -1,4 +1,4 @@
-import { FaReceipt, FaCheck, FaPen } from "react-icons/fa";
+import { FaReceipt, FaCheck, FaPen, FaFire, FaCheckDouble } from "react-icons/fa";
 import OrderSection from "./OrderSection";
 import SwipeableOrderItem from "./SwipeableOrderItem";
 import Loader from "@/components/ui/Loader";
@@ -38,19 +38,22 @@ export default function ActiveOrderList({
         return acc;
     }, {}));
 
+    // Check if ALL items are served
+    const allServed = items.every(i => i.status === 'served');
+
     const getTitle = () => {
-        if (role === 'waiter') return "Sent to Kitchen";
-        return "In Kitchen / Served";
+        if (allServed) return "Served";
+        return "In Kitchen / Preparing";
     };
 
     const getIcon = () => {
-        if (role === 'waiter') return <FaReceipt />;
-        return <FaCheck />;
+        if (allServed) return <FaCheckDouble />;
+        return <FaFire />;
     };
 
     const getAccentColor = () => {
-        if (role === 'waiter') return "blue";
-        return "green";
+        if (allServed) return "green";
+        return "yellow";
     };
 
     return (
@@ -85,6 +88,7 @@ export default function ActiveOrderList({
                             onUpdateQty={onUpdateBatchQty}
                             onDelete={onDeleteBatchItem}
                             allowIncrease={false}
+                            showReadyBadge={!allServed}
                         />
                     ))}
                 </div>
@@ -106,7 +110,13 @@ export default function ActiveOrderList({
         ) : (
             <div className="space-y-3 opacity-90">
                 {groupedItems.map(item => (
-                    <SwipeableOrderItem key={item.virtualId} item={item} isPending={false} readOnly={true} />
+                    <SwipeableOrderItem 
+                        key={item.virtualId} 
+                        item={item} 
+                        isPending={false} 
+                        readOnly={true} 
+                        showReadyBadge={!allServed} 
+                    />
                 ))}
             </div>
         )}

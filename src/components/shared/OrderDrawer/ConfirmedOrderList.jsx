@@ -18,9 +18,9 @@ export default function ConfirmedOrderList({
     if (role === 'cashier' || role === 'waiter') {
         return (
              <OrderSection
-                title={role === 'waiter' ? "Ready for Prep" : "Ready for Prep (Waiter Confirmed)"}
+                title={role === 'waiter' ? "Sent to Kitchen" : "Ready for Prep (Waiter Confirmed)"}
                 count={items.length}
-                accentColor="blue"
+                accentColor="yellow"
                 icon={<FaFire />}
              >
                 <div className="space-y-3">
@@ -30,10 +30,10 @@ export default function ConfirmedOrderList({
                     <button
                         onClick={onStartPreparing}
                         disabled={loading}
-                        className={`w-full mt-4 py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40 transition-all ${
+                        className={`w-full mt-4 py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-yellow-900/40 transition-all ${
                             loading 
-                            ? "bg-blue-600/80 cursor-not-allowed opacity-70"
-                            : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 cursor-pointer active:scale-95"
+                            ? "bg-yellow-600/80 cursor-not-allowed opacity-70"
+                            : "bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 cursor-pointer active:scale-95"
                         }`}
                     >
                         {loadingOp === 'PREPARE_ORDER' ? (

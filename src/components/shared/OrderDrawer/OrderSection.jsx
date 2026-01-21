@@ -7,9 +7,15 @@ export default function OrderSection({
   action
 }) {
   const colorClass =
-    accentColor === "orange" ? "text-[#ea7c69]" : "text-blue-400";
+    accentColor === "orange" ? "text-[#ea7c69]" 
+    : accentColor === "yellow" ? "text-yellow-400"
+    : accentColor === "green" ? "text-emerald-400"
+    : "text-blue-400";
   const borderClass =
-    accentColor === "orange" ? "border-[#ea7c69]" : "border-blue-500/50";
+    accentColor === "orange" ? "border-[#ea7c69]" 
+    : accentColor === "yellow" ? "border-yellow-400"
+    : accentColor === "green" ? "border-emerald-500"
+    : "border-blue-500/50";
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

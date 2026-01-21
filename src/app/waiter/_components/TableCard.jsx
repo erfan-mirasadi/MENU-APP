@@ -119,16 +119,35 @@ export default function TableCard({ table, session, onClick, isTransferMode, isS
     // 4. SENT TO KITCHEN (ارسال شده) - (نارنجی)
     // شامل Pending و Confirmed (چون هر دو یعنی هنوز شف شروع نکرده)
     // ---------------------------------------------------------
-    if (pendingCount > 0 || confirmedCount > 0) {
+    // ---------------------------------------------------------
+    // 4. NEW ORDER (سفارش جدید از سمت مشتری) - (نارنجی چشمک زن)
+    // ---------------------------------------------------------
+    if (pendingCount > 0) {
       return {
         type: "pending",
         baseClasses:
-          "bg-orange-500 border-2 border-orange-300 shadow-xl", 
+          "bg-orange-600 border-2 border-orange-400 animate-pulse shadow-xl shadow-orange-900/50",
         numberColor: "text-white",
         labelColor: "text-orange-50 font-bold uppercase tracking-wider",
-        labelText: "SENT TO KITCHEN",
-        icon: <FaUtensils className="text-white text-2xl" />, 
-        glow: "shadow-orange-500/50",
+        labelText: "NEW ORDER",
+        icon: <FaUtensils className="text-white text-2xl" />,
+        glow: "shadow-orange-600/50",
+      };
+    }
+
+    // ---------------------------------------------------------
+    // 4.5 SENT TO KITCHEN (تایید شده توسط گارسون) - (نارنجی کمرنگ ثابت)
+    // ---------------------------------------------------------
+    if (confirmedCount > 0) {
+      return {
+        type: "confirmed",
+        baseClasses:
+          "bg-orange-800/80 border-2 border-orange-700/50 shadow-lg",
+        numberColor: "text-orange-100",
+        labelColor: "text-orange-200 font-bold uppercase tracking-wider",
+        labelText: "WAITING FOR CHEF",
+        icon: <FaUtensils className="text-orange-200 text-2xl" />,
+        glow: "",
       };
     }
 

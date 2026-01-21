@@ -22,7 +22,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState("owner"); // Role Tab State
+  const [role, setRole] = useState("owner");
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleLogin = async (e) => {
@@ -102,7 +102,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-dark-800 border border-gray-800 shadow-2xl shadow-black/50 mb-2">
-            <RiRestaurant2Fill className="text-primary text-4xl drop-shadow-md" />
+          <img src="logo-web.png" alt="logo" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -118,7 +118,7 @@ export default function LoginPage() {
         <div className="flex bg-dark-800 p-1 rounded-2xl border border-gray-800">
           <button
             onClick={() => setRole("waiter")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               role === "waiter"
                 ? "bg-primary text-white shadow-lg"
                 : "text-gray-500 hover:text-gray-300"
@@ -128,7 +128,7 @@ export default function LoginPage() {
           </button>
           <button
             onClick={() => setRole("cashier")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               role === "cashier"
                 ? "bg-primary text-white shadow-lg"
                 : "text-gray-500 hover:text-gray-300"
@@ -138,7 +138,7 @@ export default function LoginPage() {
           </button>
           <button
             onClick={() => setRole("owner")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               role === "owner"
                 ? "bg-primary text-white shadow-lg"
                 : "text-gray-500 hover:text-gray-300"
@@ -148,7 +148,7 @@ export default function LoginPage() {
           </button>
           <button
             onClick={() => setRole("chef")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               role === "chef"
                 ? "bg-primary text-white shadow-lg"
                 : "text-gray-500 hover:text-gray-300"
@@ -162,7 +162,7 @@ export default function LoginPage() {
         <div className="bg-dark-800 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/40">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 ">
                 Email
               </label>
               <div className="relative group">
@@ -178,7 +178,9 @@ export default function LoginPage() {
                       ? "admin@example.com"
                       : role === "cashier"
                       ? "cashier@example.com"
-                      : "waiter@example.com"
+                      : role === "waiter"
+                      ? "waiter@example.com"
+                      : "chef@example.com"  
                   }
                   value={formData.email}
                   onChange={(e) =>
@@ -244,7 +246,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-gray-600 text-xs">
-          © 2025 Digital Menu. System v1.0
+          © 2026 Digital Menu. System v1.0
         </p>
       </div>
     </div>

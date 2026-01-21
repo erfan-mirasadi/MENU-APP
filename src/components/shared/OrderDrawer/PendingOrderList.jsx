@@ -59,22 +59,22 @@ export default function PendingOrderList({
     if (role === 'cashier') {
         return (
             <OrderSection
-                title="Pending (Waiter Review)"
+                title="New Order (Cashier)"
                 count={items.length}
-                accentColor="gray"
+                accentColor="blue"
                 icon={<FaClock />}
             >
-                <div className="space-y-3 opacity-80">
+                <div className="space-y-3 opacity-95">
                     {items.map(item => (
                         <SwipeableOrderItem key={item.id} item={item} isPending={true} onUpdateQty={onUpdateQty} onDelete={onDelete} />
                     ))}
                     <button
                         onClick={onConfirm}
                         disabled={loading}
-                        className={`w-full mt-4 py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-orange-900/30 ${
+                        className={`w-full mt-4 py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-blue-900/30 ${
                             loading 
-                            ? "bg-[#ea7c69]/80 cursor-not-allowed opacity-70" 
-                            : "bg-[#ea7c69] hover:bg-[#d96b58] cursor-pointer"
+                            ? "bg-blue-500/80 cursor-not-allowed opacity-70" 
+                            : "bg-blue-600 hover:bg-blue-500 cursor-pointer"
                         }`}
                     >
                          {loadingOp === 'CONFIRM_ORDER' ? (

@@ -9,7 +9,8 @@ export default function SwipeableOrderItem({
   onUpdateQty,
   onDelete,
   readOnly = false,
-  allowIncrease = true
+  allowIncrease = true,
+  showReadyBadge = true
 }) {
   const [translateX, setTranslateX] = useState(0);
   const startX = useRef(0);
@@ -74,7 +75,7 @@ export default function SwipeableOrderItem({
           <div className="w-16 h-16 shrink-0 bg-black/30 rounded-lg overflow-hidden border border-white/5">
             <SmartMedia files={item.product} alt={title} autoPlay={false} />
           </div>
-          <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0">
             <span
               className={`font-bold text-lg truncate ${
                 isPending ? "text-white" : "text-gray-300"
@@ -82,9 +83,16 @@ export default function SwipeableOrderItem({
             >
               {title}
             </span>
-            <span className="text-[#ea7c69] font-mono text-sm">
-              {item.unit_price_at_order} ₺
-            </span>
+            <div className="flex items-center gap-2">
+                <span className="text-[#ea7c69] font-mono text-sm">
+                {item.unit_price_at_order} ₺
+                </span>
+                {showReadyBadge && item.status === 'served' && (
+                    <span className="text-[10px] font-black bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/50 uppercase tracking-wider">
+                        Ready
+                    </span>
+                )}
+            </div>
           </div>
         </div>
 
