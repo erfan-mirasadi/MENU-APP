@@ -68,7 +68,6 @@ export function getFloorColor(type) {
         case 'concrete': return '#808080' // Match concrete grey
         case 'marble': return '#e5e7eb' // Match white marble
         case 'terrazzo': return '#f3f4f6' // Match terrazzo background
-        case 'white': return '#ffffff'
         case 'black': return '#1f1d2b'
         default: return '#f3f4f6'
     }

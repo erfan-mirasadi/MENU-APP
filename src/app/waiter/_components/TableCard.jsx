@@ -68,13 +68,14 @@ export default function TableCard({ table, session, onClick, isTransferMode, isS
       };
     }
 
-    // محاسبه تعداد آیتم‌ها برای تشخیص وضعیت
+    const preparingCount =
+      session.order_items?.filter((i) => i.status === "preparing").length || 0;
     const pendingCount =
       session.order_items?.filter((i) => i.status === "pending").length || 0;
     const confirmedCount =
-      session.order_items?.filter((i) =>
-        ["confirmed", "served"].includes(i.status)
-      ).length || 0;
+      session.order_items?.filter((i) => i.status === "confirmed").length || 0;
+    const servedCount =
+      session.order_items?.filter((i) => i.status === "served").length || 0;
     const hasRequest = session.service_requests?.some(
       (r) => r.status === "pending"
     );
@@ -98,27 +99,47 @@ export default function TableCard({ table, session, onClick, isTransferMode, isS
     }
 
     // ---------------------------------------------------------
-    // 3. WAITING APPROVAL (منتظر تایید) - اولویت دوم (نارنجی)
-    // اگر حتی ۱ آیتم پندینگ باشه، یعنی گارسون باید بره سر میز
+    // 3. PREPARING (درحال پخت) - (زرد)
+    // شف تایید کرده
     // ---------------------------------------------------------
-    if (pendingCount > 0) {
+    if (preparingCount > 0) {
       return {
-        type: "waiting",
+        type: "preparing",
         baseClasses:
-          "bg-orange-600 border-2 border-orange-400 animate-pulse shadow-xl",
+          "bg-yellow-600 border-2 border-yellow-400 shadow-xl",
+        numberColor: "text-white",
+        labelColor: "text-yellow-50 font-bold uppercase tracking-wider",
+        labelText: "COOKING",
+        icon: <FaUtensils className="text-white text-2xl" />,
+        glow: "shadow-yellow-500/50",
+      };
+    }
+
+    // ---------------------------------------------------------
+    // 4. SENT TO KITCHEN (ارسال شده) - (نارنجی)
+    // شامل Pending و Confirmed (چون هر دو یعنی هنوز شف شروع نکرده)
+    // ---------------------------------------------------------
+    if (pendingCount > 0 || confirmedCount > 0) {
+      return {
+        type: "pending",
+        baseClasses:
+          "bg-orange-500 border-2 border-orange-300 shadow-xl", 
         numberColor: "text-white",
         labelColor: "text-orange-50 font-bold uppercase tracking-wider",
-        labelText: "Confirm Order",
-        icon: <FaUtensils className="text-white text-2xl" />,
+        labelText: "SENT TO KITCHEN",
+        icon: <FaUtensils className="text-white text-2xl" />, 
         glow: "shadow-orange-500/50",
       };
     }
 
     // ---------------------------------------------------------
-    // 4. DINING (درحال خوردن) - وضعیت جدید (سبز) ✅
-    // اگر آیتم تایید شده داریم و هیچی پندینگ نیست
+    // 5. DINING (فقط غذای سرو شده) - (سبز)
     // ---------------------------------------------------------
-    if (confirmedCount > 0) {
+    // ---------------------------------------------------------
+    // 5. DINING (فقط غذای سرو شده) - (سبز)
+    // نمایش فقط وقتی که هیچ آیتم فعال دیگری (پخت/ارسال) وجود نداشته باشد
+    // ---------------------------------------------------------
+    if (servedCount > 0 && preparingCount === 0 && pendingCount === 0 && confirmedCount === 0) { 
       return {
         type: "dining",
         baseClasses: "bg-emerald-700 border-2 border-emerald-500/50 shadow-lg",

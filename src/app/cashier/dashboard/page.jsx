@@ -83,16 +83,20 @@ export default function DashboardPage() {
                computedStatus = 'payment_requested'
            }
            else if (confirmedCount > 0) {
-               // Waiter confirmed, Cashier Needs to see "Orange Blink"
+               // Legacy "Confirmed" status (if used)
                computedStatus = 'confirmed' 
            }
-           else if (preparingCount > 0 || servedCount > 0) {
-               // In kitchen or eating -> Green
-               computedStatus = 'active'
+           else if (preparingCount > 0) {
+               // Chef Cooking -> Yellow
+               computedStatus = 'preparing'
            }
            else if (pendingCount > 0) {
-               // Waiter hasn't confirmed yet. 
-               computedStatus = 'ordering'
+               // Waiter Sent -> Orange/Yellow
+               computedStatus = 'kitchen_sent'
+           }
+           else if (servedCount > 0) {
+               // Chef Served -> Green
+               computedStatus = 'active'
            }
            else {
                // Session open but no active items (Occupied / Seated)
@@ -452,7 +456,6 @@ export default function DashboardPage() {
                                 <option value="concrete">Concrete</option>
                                 <option value="marble">White Marble</option>
                                 <option value="terrazzo">Terrazzo</option>
-                                <option value="white">White</option>
                                 <option value="black">Black</option>
                              </select>
                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">

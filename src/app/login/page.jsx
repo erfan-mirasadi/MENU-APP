@@ -16,6 +16,7 @@ import {
   RiServiceLine,
   RiMoneyDollarCircleLine,
 } from "react-icons/ri";
+import { PiChefHat } from "react-icons/pi";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,6 +56,9 @@ export default function LoginPage() {
       if (profile.role === "cashier" && role !== "cashier") {
            throw new Error("Please log in using the Cashier tab.")
       } 
+      if (profile.role === "chef" && role !== "chef") {
+           throw new Error("Please log in using the Chef tab.")
+      } 
 
 
       toast.success(`Welcome back, ${role}!`);
@@ -70,8 +74,10 @@ export default function LoginPage() {
         }
       } else if (role === "cashier") {
         router.push("/cashier/dashboard");
-      } else {
+      } else if (role === "waiter") {
         router.push("/waiter/dashboard");
+      } else if (role === "chef") {
+        router.push("/chef/dashboard");
       }
 
       router.refresh();
@@ -139,6 +145,16 @@ export default function LoginPage() {
             }`}
           >
             <RiUserStarLine size={18} /> Manager
+          </button>
+          <button
+            onClick={() => setRole("chef")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+              role === "chef"
+                ? "bg-primary text-white shadow-lg"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+          >
+          <PiChefHat  size={18} /> Chef
           </button>
         </div>
 
@@ -216,8 +232,10 @@ export default function LoginPage() {
                 : `Enter as ${
                     role === "owner"
                       ? "Manager"
-                      : role === "cashier"
+                      : role === "cashier"  
                       ? "Cashier"
+                      : role === "chef"
+                      ? "Chef"
                       : "Waiter"
                   }`}
               <RiArrowRightLine className="group-hover:translate-x-1 transition-transform" />

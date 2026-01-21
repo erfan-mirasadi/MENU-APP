@@ -84,7 +84,14 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
           materialRef.current.emissiveIntensity = intensity * 0.8
           materialRef.current.color.set('#f97316')
       } 
-      else if (status === 'active' || status === 'preparing' || status === 'served') {
+      else if (status === 'preparing') {
+          // Chef Cooking -> Yellow Pulse
+          const intensity = 0.5 + Math.sin(time * 3) * 0.3
+          materialRef.current.emissive.set('#eab308') // Yellow-500
+          materialRef.current.emissiveIntensity = intensity
+          materialRef.current.color.set('#facc15') // Yellow-400
+      }
+      else if (status === 'active' || status === 'served') {
           // Green Glow (Steady Neon)
           materialRef.current.emissive.set('#22c55e')
           materialRef.current.emissiveIntensity = 0.5
@@ -96,8 +103,8 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
           materialRef.current.emissiveIntensity = 0.6
           materialRef.current.color.set('#ef4444')
       }
-       else if (status === 'ordering') {
-          // Pending Waiter Approval - Maybe softer orange, no blink?
+       else if (status === 'ordering' || status === 'kitchen_sent') {
+          // Sent to Kitchen -> Solid Orange
           materialRef.current.emissive.set('#f97316')
           materialRef.current.emissiveIntensity = 0.2
           materialRef.current.color.set('#fdba74') 

@@ -214,3 +214,57 @@ export async function updateOrderItemSecurely(itemId, newQty, oldQty, reason) {
     if (error) throw error;
     return data;
 }
+
+// Chef Dashboard Logic
+export async function getKitchenOrders(restaurantId) {
+    if (!restaurantId) return [];
+
+    const { data, error } = await supabase
+        .from("order_items")
+        .select(`
+            id,
+            session_id,
+            status,
+            quantity,
+            created_at,
+            product_id,
+            products (title, image_url, price),
+            session:sessions!inner (
+                id,
+                restaurant_id,
+                table_id, 
+                tables (table_number)
+            )
+        `)
+        .eq("session.restaurant_id", restaurantId)
+        .in("status", ["pending", "confirmed", "preparing", "served"])
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Error fetching kitchen orders:", error);
+        return [];
+    }
+    return data;
+}
+
+export async function updateOrderItemStatus(itemId, newStatus) {
+    const validStatuses = ["preparing", "served", "cancelled"];
+    if (!validStatuses.includes(newStatus)) {
+        throw new Error(`Invalid status: ${newStatus}`);
+    }
+
+    const { data, error } = await supabase
+        .from("order_items")
+        .update({ status: newStatus })
+        .eq("id", itemId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error updating order status:", error);
+        toast.error("Failed to update status");
+        throw error;
+    }
+
+    return data;
+}

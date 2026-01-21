@@ -21,7 +21,7 @@ export async function confirmOrderItems(sessionId) {
 export async function startPreparingOrder(sessionId) {
   const { data, error } = await supabase
     .from("order_items")
-    .update({ status: "served" })
+    .update({ status: "preparing" })
     .eq("session_id", sessionId)
     .eq("status", "confirmed")
     .select();

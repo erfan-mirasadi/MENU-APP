@@ -1,0 +1,23 @@
+import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { redirect } from "next/navigation";
+import { getUserProfile } from "@/services/userService";
+import ChefLayoutClient from "./ChefLayoutClient";
+
+export default async function chefLayout({ children }) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // 1. Strict Role Check: Only 'chef'
+  const profile = await getUserProfile(supabase, user?.id);
+
+  if (!profile || profile.role !== "chef") {
+    if (profile?.role === "owner") {
+        redirect("/admin/dashboard");
+    }
+    redirect("/login");
+  }
+
+  return <ChefLayoutClient>{children}</ChefLayoutClient>;
+}
