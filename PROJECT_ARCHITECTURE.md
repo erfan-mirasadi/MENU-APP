@@ -22,7 +22,8 @@ The codebase is a monorepo containing 4 distinct applications, each serving a sp
 1.  **Client/User App (`/[slug]`):** End customers scan QR codes to view 3D menus and place group orders via synchronous carts.
 2.  **Waiter App (`/waiter`):** Staff receive real-time notifications, manage table status, and confirm orders for the kitchen.
 3.  **Cashier App (`/cashier`):** Cashiers validate orders, handle complex split-check payments, and finalize table sessions.
-4.  **Admin (Owner) App (`/admin`):** Owners manage menus, generating QR codes, and viewing business analytics.
+4.  **Kitchen App (`/chef`):** Chefs view incoming orders in real-time, grouped by table, and marks them as 'Ready' (served) or 'Preparing'.
+5.  **Admin (Owner) App (`/admin`):** Owners manage menus, generate QR codes, view business analytics, and **toggle system modules**.
 
 ### 3. Codebase Architecture & Data Flow
 The project follows a strict **Service-Repository Pattern** to ensure separation of concerns and maintainability.
@@ -92,6 +93,14 @@ The checkout process is a critical financial flow managed by the Cashier App:
 2.  **Row Level Security (RLS):** Supabase RLS policies are the last line of defense, ensuring that a user from Restaurant A cannot query data from Restaurant B even if the API is exploited.
 3.  **Auditing:** Sensitive actions (like deleting an order item after it has been cooked) are recorded in `activity_logs` with the actor's IP and User ID to prevent fraud.
 
+### 7. Modular Feature System (Feature Flags)
+The system supports enabling/disabling core modules per restaurant via the Admin Panel:
+*   **Modules:** `waiter`, `cashier`, `kitchen`.
+*   **Ordering System Logic:** The customer's ability to place orders (`ordering_enabled`) is **automatically derived**:
+    *   **TRUE:** If at least one module (Waiter/Cashier/Kitchen) is enabled.
+    *   **FALSE:** If ALL modules are disabled (Draft Mode / Wishlist only).
+*   **Architecture:** Flags are stored in `restaurants.features` (JSONB) and consumed via `useRestaurantFeatures` hook and `FeatureGuard` component.
+
 ---
 
 ## 🇮🇷 مستندات فارسی (Persian Documentation)
@@ -143,3 +152,9 @@ The checkout process is a critical financial flow managed by the Cashier App:
 ### ۵. امنیت و چند مستاجری
 1.  **ایزولاسیون:** تمامی توابع دیتابیس باید شرط `WHERE restaurant_id = ...` را داشته باشند.
 2.  **Activity Logs:** تمامی عملیات حساس (مثل Void کردن سفارش) با ذکر نام کاربر و جزئیات در `activity_logs` ثبت می‌شود تا قابل پیگیری باشد.
+
+### ۶. سیستم ماژولار (Modular Features)
+ادمین می‌تواند ماژول‌های اصلی (گارسون، صندوقدار، آشپزخانه) را خاموش/روشن کند:
+*   **منطق خودکار سفارش‌دهی:** قابلیت سفارش مشتری (`ordering_enabled`) به صورت خودکار محاسبه می‌شود:
+    *   **روشن:** اگر حداقل یکی از ماژول‌ها روشن باشد.
+    *   **خاموش:** اگر همه ماژول‌ها خاموش باشند (حالت نمایشی/Draft).

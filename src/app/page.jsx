@@ -3,6 +3,7 @@ import Image from "next/image";
 import { 
   RiRocketLine, 
   RiRestaurantFill, 
+
   RiServiceLine, 
   RiBankCardLine, 
   RiDashboardLine, 
@@ -98,7 +99,7 @@ export default function Home() {
 
 
         {/* --- PORTAL / APPS SECTION --- */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           
           {/* WAITER APP */}
           <Link href="/waiter/dashboard" className="group">
@@ -131,6 +132,24 @@ export default function Home() {
                 </p>
               </div>
                <div className="mt-auto pt-4 flex items-center text-purple-400 text-sm font-bold gap-2">
+                Login <RiArrowRightLine className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* KITCHEN APP */}
+          <Link href="/chef/dashboard" className="group">
+            <div className="h-full bg-[#252836] hover:bg-[#2d303e] border border-white/5 hover:border-[#ea7c69]/30 rounded-3xl p-8 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(234,124,105,0.15)] flex flex-col items-start gap-4">
+               <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform text-yellow-400">
+                <RiRestaurantFill />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">Kitchen Display</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                   Real-time order visualization for chefs to manage preparation flow efficiently.
+                </p>
+              </div>
+               <div className="mt-auto pt-4 flex items-center text-yellow-400 text-sm font-bold gap-2">
                 Login <RiArrowRightLine className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

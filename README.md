@@ -30,7 +30,8 @@ The codebase is a monorepo containing 4 distinct applications:
 1.  **Client User App (`/[slug]`)**: End customers scan QR codes to view interactive **3D menus** and place group orders via synchronous carts.
 2.  **Waiter App (`/waiter`)**: Staff receive real-time notifications, manage table status, and confirm orders for the kitchen.
 3.  **Cashier App (`/cashier`)**: Cashiers validate orders, handle complex split-check payments, and finalize table sessions.
-4.  **Admin Portal (`/admin`)**: Owners manage menus, generate QR codes, and view business analytics.
+4.  **Kitchen App (`/chef`)**: Chefs view orders in real-time, grouped by table, and manage preparation status.
+5.  **Admin Portal (`/admin`)**: Owners manage menus, generate QR codes, and view business analytics.
 
 ---
 
