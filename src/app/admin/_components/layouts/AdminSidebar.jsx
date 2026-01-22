@@ -83,7 +83,7 @@ export default function AdminSidebar({ links }) {
       {/* 3. Logout Button (Bottom) */}
       <button
         onClick={handleLogout}
-        className="mt-auto mb-4 text-accent hover:text-white hover:bg-red-500/20 w-12 h-12 rounded-xl flex items-center justify-center transition-colors"
+        className="mt-auto mb-4 text-accent hover:text-white hover:bg-red-500/20 w-12 h-12 rounded-xl flex items-center justify-center transition-colors cursor-pointer"
       >
         <RiLogoutBoxRLine size={24} />
       </button>

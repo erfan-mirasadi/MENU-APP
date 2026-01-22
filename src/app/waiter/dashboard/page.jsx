@@ -3,14 +3,25 @@
 import { useRestaurantData } from "@/app/hooks/useRestaurantData";
 import { useState } from "react";
 import { FaLayerGroup } from "react-icons/fa";
+import { RiLogoutBoxRLine } from "react-icons/ri"; // Added icon
+import { useRouter } from "next/navigation"; // Added router
+import { supabase } from "@/lib/supabase"; // Added supabase
 import OrderDrawer from "@/components/shared/OrderDrawer";
 import OfflineAlert from "@/components/shared/OfflineAlert";
 import TableCard from "../_components/TableCard";
 import { useRestaurantFeatures } from "@/app/hooks/useRestaurantFeatures";
 
 export default function WaiterDashboard() {
-  const { tables, sessions, loading, handleCheckout, isConnected } = useRestaurantData();
+  const { tables, sessions, loading, handleCheckout, isConnected, refetch } = useRestaurantData();
   const [loadingTransfer, setLoadingTransfer] = useState(false);
+  const router = useRouter(); // Added router
+
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to logout?")) {
+      await supabase.auth.signOut();
+      router.push("/login");
+    }
+  };
 
   // State
   const [selectedTable, setSelectedTable] = useState(null);
@@ -185,14 +196,25 @@ export default function WaiterDashboard() {
               </p>
             </div>
             {/* Realtime Status Indicator */}
-            <div className="flex items-center gap-2">
-               <span className={`text-[10px] font-bold uppercase tracking-wider ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-                  {isConnected ? 'Live' : 'Offline'}
-               </span>
-               <div className="relative flex h-3 w-3">
-                  {isConnected && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
-                  <span className={`relative inline-flex rounded-full h-3 w-3 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-               </div>
+            <div className="relative flex flex-col items-end gap-3 translate-x-1">
+                <div className="flex items-center gap-2">
+                   <span className={`text-[10px] font-bold uppercase tracking-wider ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                      {isConnected ? 'Live' : 'Offline'}
+                   </span>
+                   <div className="relative flex h-3 w-3">
+                      {isConnected && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
+                      <span className={`relative inline-flex rounded-full h-3 w-3 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                   </div>
+                </div>
+
+                {/* Logout Button (Absolute / Floating out of layout) */}
+               <button 
+                  onClick={handleLogout}
+                  className="absolute top-8 right-0 bg-red-500/10 hover:bg-red-500/20 text-red-500 p-2 rounded-xl transition-colors border border-red-500/20"
+                  title="Logout"
+               >
+                  <RiLogoutBoxRLine size={18} />
+               </button>
             </div>
           </div>
 
@@ -268,6 +290,7 @@ export default function WaiterDashboard() {
         role="waiter"
         onCheckout={handleCheckout}
         onTransfer={handleEnterTransferMode}
+        onRefetch={refetch}
       />
     </div>
   );

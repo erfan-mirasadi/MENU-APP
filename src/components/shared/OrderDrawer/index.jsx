@@ -27,10 +27,11 @@ export default function OrderDrawer({
     onClose, 
     role = "waiter", 
     onCheckout,
-    onTransfer
+    onTransfer,
+    onRefetch 
 }) {
     // Pass onClose as the 5th argument to handle auto-close on table close
-    const { state, setters, actions } = useOrderDrawerLogic(session, table, onCheckout, role, onClose);
+    const { state, setters, actions } = useOrderDrawerLogic(session, table, onCheckout, role, onClose, onRefetch);
     const {
         loading, loadingOp, localItems, pendingItems, confirmedItems, activeItems, totalAmount,
         isMenuOpen, isPaymentModalOpen, isVoidModalOpen, itemToVoid, isBatchEditing, batchItems

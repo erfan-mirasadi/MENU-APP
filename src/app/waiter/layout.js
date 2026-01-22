@@ -12,10 +12,7 @@ export default async function WaiterLayout({ children }) {
   // 1. Strict Role Check: Only 'waiter'
   const profile = await getUserProfile(supabase, user?.id);
 
-  if (!profile || profile.role !== "waiter") {
-    if (profile?.role === "owner") {
-        redirect("/admin/dashboard");
-    }
+  if (!profile || (profile.role !== "waiter" && profile.role !== "owner")) {
     redirect("/login");
   }
 

@@ -13,7 +13,7 @@ import {
 import { voidOrderItem, updateOrderItemSecurely } from "@/services/orderService";
 import { useRestaurantFeatures } from "./useRestaurantFeatures";
 
-export const useOrderDrawerLogic = (session, table, onCheckout, role = "waiter", onCloseDrawer) => {
+export const useOrderDrawerLogic = (session, table, onCheckout, role = "waiter", onCloseDrawer, onRefetch) => {
   const { features } = useRestaurantFeatures();
   const [loadingOp, setLoadingOp] = useState(null); // 'START_SESSION', 'CLOSE_TABLE', etc.
   
@@ -109,6 +109,16 @@ export const useOrderDrawerLogic = (session, table, onCheckout, role = "waiter",
   };
 
   const handlePaymentRequest = async () => {
+    if (onRefetch) {
+        setLoadingOp('FETCHING_LATEST');
+        try {
+            await onRefetch();
+        } catch(e) {
+            console.error("Failed to refetch session", e);
+        } finally {
+            setLoadingOp(null);
+        }
+    }
     setIsPaymentModalOpen(true);
   };
 

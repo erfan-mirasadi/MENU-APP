@@ -6,7 +6,6 @@ import { getRestaurantByOwnerId } from "@/services/restaurantService";
 import { getUserProfile } from "@/services/userService";
 import toast from "react-hot-toast";
 import {
-  RiRestaurant2Fill,
   RiMailLine,
   RiLock2Line,
   RiArrowRightLine,
@@ -18,6 +17,7 @@ import {
 } from "react-icons/ri";
 import { PiChefHat } from "react-icons/pi";
 import Loader from "@/components/ui/Loader";
+import SegmentedControl from "@/app/cashier/_components/SegmentedControl";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,20 +46,21 @@ export default function LoginPage() {
       if (!profile) throw new Error("Profile access denied.");
 
       // 3. Role Enforcement
-      if (profile.role === "owner" && role !== "owner") {
-           throw new Error("Please log in using the Manager tab.")
-      }
-      
-      if (profile.role === "waiter" && role !== "waiter") {
-           throw new Error("Please log in using the Waiter tab.")
-      } 
+      // 3. Role Enforcement (Owners have master access)
+      if (profile.role !== "owner") {
+            if (profile.role === "waiter" && role !== "waiter") {
+                throw new Error("Please log in using the Waiter tab.")
+            } 
 
-      if (profile.role === "cashier" && role !== "cashier") {
-           throw new Error("Please log in using the Cashier tab.")
-      } 
-      if (profile.role === "chef" && role !== "chef") {
-           throw new Error("Please log in using the Chef tab.")
-      } 
+            if (profile.role === "cashier" && role !== "cashier") {
+                throw new Error("Please log in using the Cashier tab.")
+            } 
+            
+            if (profile.role === "chef" && role !== "chef") {
+                throw new Error("Please log in using the Chef tab.")
+            }
+      }
+      // If owner, we allow them to proceed with ANY selected role. 
 
 
       toast.success(`Welcome back, ${role}!`);
@@ -100,7 +101,8 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-blue-500/5 rounded-full blur-[80px]" />
       </div>
 
-      <div className="w-full max-w-sm z-10 flex flex-col gap-8">
+      {/* Content Container with Blur transition */}
+      <div className={`w-full max-w-sm z-10 flex flex-col gap-8 transition-all duration-1000 ${loading ? 'blur-sm opacity-50 pointer-events-none' : ''}`}>
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-dark-800 border border-gray-800 shadow-2xl shadow-black/50 mb-2">
@@ -117,56 +119,30 @@ export default function LoginPage() {
         </div>
 
         {/* Role Tabs */}
-        <div className="flex bg-dark-800 p-1 rounded-2xl border border-gray-800">
-          <button
-            onClick={() => setRole("waiter")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              role === "waiter"
-                ? "bg-primary text-white shadow-lg"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <RiServiceLine size={18} /> Waiter
-          </button>
-          <button
-            onClick={() => setRole("cashier")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              role === "cashier"
-                ? "bg-primary text-white shadow-lg"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <RiMoneyDollarCircleLine size={18} /> Cashier
-          </button>
-          <button
-            onClick={() => setRole("owner")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              role === "owner"
-                ? "bg-primary text-white shadow-lg"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <RiUserStarLine size={18} /> Manager
-          </button>
-          <button
-            onClick={() => setRole("chef")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              role === "chef"
-                ? "bg-primary text-white shadow-lg"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-          <PiChefHat  size={18} /> Chef
-          </button>
+        <div className="w-full">
+            <p className="text-[10px] text-gray-500/60 font-bold tracking-widest mb-3 ml-1">Select Role :</p>
+            <SegmentedControl
+                fullWidth
+                active={role}
+                onChange={setRole}
+                options={[
+                    { value: "owner", label: <div className="flex items-center justify-center gap-1 md:gap-2"><RiUserStarLine size={16} className="md:w-[18px] md:h-[18px]" /> <span className="text-[10px] md:text-sm font-bold">Manager</span></div> },
+                    { value: "cashier", label: <div className="flex items-center justify-center gap-1 md:gap-2"><RiMoneyDollarCircleLine size={16} className="md:w-[18px] md:h-[18px]" /> <span className="text-[10px] md:text-sm font-bold">Cashier</span></div> },
+                    { value: "waiter", label: <div className="flex items-center justify-center gap-1 md:gap-2"><RiServiceLine size={16} className="md:w-[18px] md:h-[18px]" /> <span className="text-[10px] md:text-sm font-bold">Waiter</span></div> },
+                    { value: "chef", label: <div className="flex items-center justify-center gap-1 md:gap-2"><PiChefHat size={16} className="md:w-[18px] md:h-[18px]" /> <span className="text-[10px] md:text-sm font-bold">Chef</span></div> },
+                ]}
+            />
         </div>
 
         {/* Login Card */}
         <div className="bg-dark-800 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/40">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 ">
-                Email
-              </label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Email
+                </label>
+              </div>
               <div className="relative group">
                 <div className="absolute left-4 top-4 text-gray-500 group-focus-within:text-primary transition-colors">
                   <RiMailLine size={20} />
@@ -229,7 +205,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary border-2 border-gray-500 hover:bg-orange-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full bg-primary border-2 border-gray-500 hover:bg-accent/40 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
             >
               {loading
                 ? "Verifying..."

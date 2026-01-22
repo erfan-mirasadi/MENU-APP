@@ -401,6 +401,7 @@ export default function DashboardPage() {
                 role="cashier"
                 restaurant={restaurant}
                 onTransfer={handleEnterTransferMode}
+                onRefetch={refetch}
             />
        )}
 

@@ -12,10 +12,7 @@ export default async function chefLayout({ children }) {
   // 1. Strict Role Check: Only 'chef'
   const profile = await getUserProfile(supabase, user?.id);
 
-  if (!profile || profile.role !== "chef") {
-    if (profile?.role === "owner") {
-        redirect("/admin/dashboard");
-    }
+  if (!profile || (profile.role !== "chef" && profile.role !== "owner")) {
     redirect("/login");
   }
 

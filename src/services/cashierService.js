@@ -52,6 +52,23 @@ export const cashierService = {
         
         if (createError) throw createError;
         bill = newBill;
+    } else {
+        // Fix: Ensure bill.total_amount is up-to-date with actual order items
+        // If items were added after bill creation, bill.total_amount might be stale.
+        const dbTotal = parseFloat(bill.total_amount);
+        if (Math.abs(dbTotal - totalAmount) > 0.01) {
+             console.log(`Fixing Stale Bill: DB(${dbTotal}) vs Actual(${totalAmount})`);
+             const { data: updatedBill, error: updateErr } = await supabase
+                .from("bills")
+                .update({ total_amount: totalAmount })
+                .eq("id", bill.id)
+                .select()
+                .single();
+             
+             if (!updateErr && updatedBill) {
+                 bill = updatedBill; // Use fresh bill for validation
+             }
+        }
     }
 
     // 3. Prepare Transactions

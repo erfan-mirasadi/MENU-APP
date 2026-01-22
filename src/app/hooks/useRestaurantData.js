@@ -27,6 +27,22 @@ export const RestaurantProvider = ({ children }) => {
     sessionsRef.current = sessions;
   }, [sessions]);
 
+  // Auth Listener to trigger fetch on login/restore
+  useEffect(() => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              fetchData();
+          } else if (event === 'SIGNED_OUT') {
+              setTables([]);
+              setSessions([]);
+              setRestaurant(null);
+              setRestaurantId(null);
+              setLoading(false);
+          }
+      });
+      return () => subscription.unsubscribe();
+  }, []);
+
   // 1. Fetch Data
   const fetchData = useCallback(async () => {
     try {

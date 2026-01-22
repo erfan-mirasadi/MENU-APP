@@ -12,10 +12,7 @@ export default async function CashierLayout({ children }) {
   // 1. Strict Role Check: Only 'cashier'
   const profile = await getUserProfile(supabase, user?.id);
 
-  if (!profile || profile.role !== "cashier") {
-    if (profile?.role === "cashier") {
-        redirect("/cashier/dashboard");
-    }
+  if (!profile || (profile.role !== "cashier" && profile.role !== "owner")) {
     redirect("/login");
   }
 
