@@ -43,7 +43,42 @@ export const RestaurantProvider = ({ children }) => {
       return () => subscription.unsubscribe();
   }, []);
 
-  // 1. Fetch Data
+  // 1a. Fetch Operational Data (Tables & Sessions) - Efficient re-fetcher
+  const fetchOperationalData = useCallback(async (rId) => {
+    try {
+        // Fetch Tables
+        const { data: tablesData } = await supabase
+            .from("tables")
+            .select("*")
+            .eq("restaurant_id", rId)
+            .order("table_number", { ascending: true });
+
+        setTables(tablesData || []);
+
+        // Fetch Sessions
+        const { data: sessionsData, error } = await supabase
+            .from("sessions")
+            .select(`
+            *,
+            bills (*),
+            order_items (
+                id, status, quantity, unit_price_at_order, created_at, product_id, session_id, added_by_guest_id,
+                product:products ( title, price, image_url ) 
+            ),
+            service_requests ( id, status, request_type )
+            `)
+            .eq("restaurant_id", rId)
+            .neq("status", "closed");
+
+        if (error) console.error("Session fetch error:", error);
+
+        setSessions(sessionsData || []);
+    } catch (error) {
+        console.error("Error fetching operational data:", error);
+    }
+  }, []);
+
+  // 1b. Fetch All Data (Initial Setup)
   const fetchData = useCallback(async () => {
     try {
       console.log("🔄 Fetching Data (Singleton Context)..."); 
@@ -70,40 +105,15 @@ export const RestaurantProvider = ({ children }) => {
           return;
       }
 
-      // Fetch Tables
-      const { data: tablesData } = await supabase
-        .from("tables")
-        .select("*")
-        .eq("restaurant_id", rId)
-        .order("table_number", { ascending: true });
-
-      setTables(tablesData || []);
-
-      // Fetch Sessions
-      const { data: sessionsData, error } = await supabase
-        .from("sessions")
-        .select(`
-          *,
-          bills (*),
-          order_items (
-            id, status, quantity, unit_price_at_order, created_at, product_id, session_id, added_by_guest_id,
-            product:products ( title, price, image_url ) 
-          ),
-          service_requests ( id, status, request_type )
-        `)
-        .eq("restaurant_id", rId)
-        .neq("status", "closed");
-
-      if (error) console.error("Session fetch error:", error);
-
-      setSessions(sessionsData || []);
+      // Fetch operational data using the dedicated function
+      await fetchOperationalData(rId);
 
     } catch (error) {
       console.error("Error fetching restaurant data:", error);
     } finally {
       setLoading(false);
     }
-  }, [restaurantId]);
+  }, [restaurantId, fetchOperationalData]);
 
   // 2. Initial Fetch
   useEffect(() => {
@@ -120,7 +130,7 @@ export const RestaurantProvider = ({ children }) => {
     const handleUpdate = () => {
        if (timeoutRef.current) clearTimeout(timeoutRef.current);
        timeoutRef.current = setTimeout(() => {
-           fetchData();
+           fetchOperationalData(restaurantId);
        }, 500); // 500ms debounce
     };
 
@@ -189,7 +199,7 @@ export const RestaurantProvider = ({ children }) => {
       supabase.removeChannel(channel);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [restaurantId, fetchData]); // Dependencies: only external IDs and stable fetch function
+  }, [restaurantId, fetchData, fetchOperationalData]); // Dependencies: only external IDs and stable fetch function
 
   // 4. Checkout Logic
   const handleCheckout = async (sessionId, type, data) => {
@@ -198,7 +208,8 @@ export const RestaurantProvider = ({ children }) => {
            const result = await cashierService.processPayment(sessionId, type, data);
            
            if (result.success) {
-               fetchData();
+               // Efficiently update tables/sessions without touching restaurant profile
+               fetchOperationalData(restaurantId);
                return { success: true };
            }
       } catch (error) {
@@ -207,16 +218,52 @@ export const RestaurantProvider = ({ children }) => {
       }
   };
 
+  // 5. Calculate Features (Stable & Unique)
+  // We use a Ref to ensure we don't return a new object (and trigger re-renders) 
+  // if the features content hasn't actually changed.
+  const prevFeaturesRef = useRef(null);
+  
+  const features = useMemo(() => {
+        const defaults = {
+            menu: true,
+            waiter: true,
+            cashier: true,
+            kitchen: true,
+            ordering_enabled: true
+        };
+        
+        let newFeatures = defaults;
+
+        // If we have restaurant data, merge it
+        if (restaurant) {
+            newFeatures = { ...defaults, ...(restaurant.features || {}) };
+        }
+
+        // Deep Check: Has it actually changed?
+        const prevStr = JSON.stringify(prevFeaturesRef.current);
+        const newStr = JSON.stringify(newFeatures);
+
+        if (prevStr === newStr && prevFeaturesRef.current) {
+            return prevFeaturesRef.current;
+        }
+
+        // It changed (or first run)
+        console.log("Features:", newFeatures);
+        prevFeaturesRef.current = newFeatures;
+        return newFeatures;
+  }, [restaurant]);
+
   const value = useMemo(() => ({ 
       tables, 
       sessions, 
       loading, 
       restaurantId, 
       restaurant, 
+      features, // Exported to context
       refetch: fetchData, 
       handleCheckout, 
       isConnected 
-  }), [tables, sessions, loading, restaurantId, restaurant, fetchData, isConnected]);
+  }), [tables, sessions, loading, restaurantId, restaurant, features, fetchData, isConnected]);
 
   return <RestaurantContext.Provider value={value}>{children}</RestaurantContext.Provider>;
 };
