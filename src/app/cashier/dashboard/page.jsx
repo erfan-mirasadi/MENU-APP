@@ -14,6 +14,8 @@ import Loader from '@/components/ui/Loader'
 import { useRestaurantFeatures } from '@/app/hooks/useRestaurantFeatures';
 import { useLanguage } from '@/context/LanguageContext';
 import TableGrid from '@/components/shared/TableView/TableGrid';
+import { moveSession, mergeSessions } from "@/services/waiterService";
+import { serviceRequestService } from "@/services/serviceRequestService";
 import { FaList, FaCube } from 'react-icons/fa';
 
 export default function DashboardPage() {
@@ -33,9 +35,6 @@ export default function DashboardPage() {
   // Transfer State
   const [isTransferMode, setIsTransferMode] = useState(false)
   const [sourceTableIdForTransfer, setSourceTableIdForTransfer] = useState(null)
-
-  // Dynamically import service (to avoid top-level circular deps if any)
-  // const { moveSession, mergeSessions } = require("@/services/waiterService");
 
   // Local state for layout changes
   const [localTables, setLocalTables] = useState([])
@@ -144,6 +143,38 @@ export default function DashboardPage() {
      toast(t('transferCancelled'));
   };
 
+  const handleNormalTableClick = async (tableId) => {
+      // 1. Check if Transfer Mode
+      if (isTransferMode) {
+          handleTableSelection(tableId);
+          return;
+      }
+
+      // 2. Check for Bill Request (Resolve on Click)
+      const table = mergedTables.find(t => t.id === tableId);
+      if (table?.status === 'payment_requested') {
+
+
+           const pendingRequests = table.session?.service_requests?.filter(r => r.status === 'pending');
+           if (pendingRequests?.length > 0) {
+              try {
+                  toast.loading("Resolving Request...", { id: "resolve-req" });
+                  await Promise.all(pendingRequests.map(req => serviceRequestService.resolveRequest(req.id)));
+                  toast.success("Request Cleared", { id: "resolve-req" });
+                  refetch(); // Refresh UI
+              } catch (err) {
+                  console.error(err);
+                  toast.error("Failed to resolve", { id: "resolve-req" });
+              }
+              return; // Stop here, don't open drawer
+           }
+      }
+
+      // 3. Open Drawer
+      setSelectedTableId(tableId);
+      setIsDrawerOpen(true);
+  };
+
   const handleTableSelection = async (targetId) => {
      if (!sourceTableIdForTransfer || loadingTransfer) return;
      
@@ -152,10 +183,8 @@ export default function DashboardPage() {
          return;
      }
 
-     // Import dynamically
-     const { moveSession, mergeSessions } = require("@/services/waiterService");
 
-     // 1. Get Source Session
+
      const sourceSession = sessions.find(s => s.table_id === sourceTableIdForTransfer);
      if (!sourceSession) {
          toast.error("Source table has no active session!");
@@ -384,14 +413,7 @@ export default function DashboardPage() {
                         floorType={floorStyle}
                         onSelectTable={(id) => {
                             if(!id) return;
-                            
-                            if (isTransferMode) {
-                                handleTableSelection(id);
-                                return;
-                            }
-
-                            setSelectedTableId(id);
-                            setIsDrawerOpen(true);
+                            handleNormalTableClick(id);
                         }}
                     />
                 </div>
@@ -402,12 +424,7 @@ export default function DashboardPage() {
                     tables={mergedTables}
                     sessions={sessions}
                     onTableClick={(table) => {
-                        if (isTransferMode) {
-                            handleTableSelection(table.id);
-                            return;
-                        }
-                        setSelectedTableId(table.id);
-                        setIsDrawerOpen(true);
+                        handleNormalTableClick(table.id);
                     }}
                     isTransferMode={isTransferMode}
                     sourceTableId={sourceTableIdForTransfer}
@@ -460,7 +477,7 @@ export default function DashboardPage() {
         {/* Header */}
         <header className="flex justify-between items-start pointer-events-auto">
           <div className="flex items-start flex-col gap-1">
-              <h1 className="text-2xl font-bold tracking-wider uppercase text-white drop-shadow-md">{t('floorManager')}</h1>
+              <h1 className="text-2xl font-bold tracking-wider uppercase text-white drop-shadow-md select-none">{t('floorManager')}</h1>
               {isEditing && <span className="text-xs bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded border border-blue-500/30 font-bold">{t('editMode')}</span>}
           </div>
           
@@ -471,12 +488,71 @@ export default function DashboardPage() {
                {/* Stats */}
               {!isEditing && (
                 <>
-                  <div className="bg-[#252836]/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/10 text-sm font-medium flex items-center gap-3 text-white">
+                  <div className="bg-[#252836]/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/10 text-sm font-medium flex items-center gap-3 text-white select-none">
+                     
+                     {/* System Status */}
                      <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
                         <span className="text-gray-300">{isConnected ? t('systemOnline') : t('offline')}</span>
                      </div>
                      <div className="w-px h-4 bg-white/10"></div>
+
+                     {/* 1. Bill Requests (Blue Blink) - High Priority */}
+                     {mergedTables.filter(t => t.status === 'payment_requested').length > 0 && (
+                        <>
+                            <div className="flex items-center gap-2 animate-pulse">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span className="text-blue-200 font-bold">{mergedTables.filter(t => t.status === 'payment_requested').length} Bill</span>
+                            </div>
+                            <div className="w-px h-4 bg-white/10"></div>
+                        </>
+                     )}
+
+                     {/* 2. Served (Green) */}
+                     {mergedTables.filter(t => t.status === 'active').length > 0 && (
+                        <>
+                             <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="text-green-200">{mergedTables.filter(t => t.status === 'active').length} Served</span>
+                             </div>
+                             <div className="w-px h-4 bg-white/10"></div>
+                        </>
+                     )}
+
+                     {/* 3. Kitchen/Preparing (Yellow) */}
+                     {mergedTables.filter(t => t.status === 'preparing').length > 0 && (
+                        <>
+                             <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
+                                <span className="text-yellow-200">{mergedTables.filter(t => t.status === 'preparing').length} Kitchen</span>
+                             </div>
+                             <div className="w-px h-4 bg-white/10"></div>
+                        </>
+                     )}
+
+                     {/* 4. To Confirm (Orange Blink) - NEW */}
+                     {mergedTables.filter(t => t.status === 'confirmed').length > 0 && (
+                        <>
+                             <div className="flex items-center gap-2 animate-pulse">
+                                <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                <span className="text-orange-200">{mergedTables.filter(t => t.status === 'confirmed').length} To Confirm</span>
+                             </div>
+                             <div className="w-px h-4 bg-white/10"></div>
+                        </>
+                     )}
+
+                     {/* 5. Pending (Light Blue) */}
+                     {mergedTables.filter(t => t.status === 'kitchen_sent').length > 0 && (
+                        <>
+                             <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                <span className="text-cyan-200">{mergedTables.filter(t => t.status === 'kitchen_sent').length} Pending</span>
+                             </div>
+                             <div className="w-px h-4 bg-white/10"></div>
+                        </>
+                     )}
+
+                     {/* Occupied (Total Non-Free) */}
                      <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                         <span className="text-gray-300">{mergedTables.filter(t => t.status !== 'free').length} {t('occupied')}</span>

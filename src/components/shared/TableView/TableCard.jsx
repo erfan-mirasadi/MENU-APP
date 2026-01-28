@@ -6,11 +6,12 @@ import {
   FaConciergeBell,
   FaUtensils,
   FaCheckCircle,
-  FaMugHot, // آیکون جدید برای حالت Dining
+  FaMugHot,
+  FaFileInvoiceDollar,
   FaUsers
 } from "react-icons/fa";
 
-export default function TableCard({ table, session, onClick, isTransferMode, isSource, role = "waiter" }) {
+export default function TableCard({ table, session, onClick, isTransferMode, isSource, role = "waiter", isLoading = false }) {
   const cardStyle = useMemo(() => {
     // ---------------------------------------------------------
     // 0. TRANSFER MODE
@@ -84,19 +85,54 @@ export default function TableCard({ table, session, onClick, isTransferMode, isS
     // ---------------------------------------------------------
     // 2. ALERT (Requests)
     // ---------------------------------------------------------
-    if (hasRequest) {
-      return {
-        type: "alert",
-        baseClasses:
-          "bg-gradient-to-br from-red-600 to-red-800 border-2 border-red-400 animate-bounce shadow-xl",
-        numberColor: "text-white",
-        labelColor: "text-red-100 font-bold",
-        labelText: "CALLING!",
-        icon: (
-          <FaConciergeBell className="text-white text-2xl animate-wiggle" />
-        ),
-        glow: "shadow-red-600/50",
-      };
+    const requests = session.service_requests || [];
+    
+    // Filter requests based on ROLE
+    // Waiter sees ALL requests.
+    // Cashier sees ONLY 'bill' requests.
+    const relevantRequests = requests.filter(r => {
+        if (r.status !== 'pending') return false;
+        if (role === 'cashier') {
+            return r.request_type === 'bill';
+        }
+        return true; // Waiter sees everything
+    });
+
+    const hasRelevantRequest = relevantRequests.length > 0;
+
+    if (hasRelevantRequest) {
+        // Check specifically for Bill Request (High Priority for Cashier)
+        const isBillRequest = relevantRequests.some(r => r.request_type === 'bill');
+        const isCallWaiter = relevantRequests.some(r => r.request_type === 'call_waiter');
+
+        if (isBillRequest) {
+             return {
+                type: "alert-bill",
+                baseClasses:
+                  "bg-gradient-to-br from-indigo-600 to-indigo-900 border-2 border-indigo-400 animate-pulse shadow-xl",
+                numberColor: "text-white",
+                labelColor: "text-indigo-100 font-bold uppercase tracking-wider",
+                labelText: "BILL REQUEST",
+                icon: (
+                  <FaFileInvoiceDollar className="text-white text-2xl animate-bounce" />
+                ),
+                glow: "shadow-indigo-600/50",
+            };
+        }
+
+        // Default Call Waiter / Cancel Alert
+        return {
+            type: "alert",
+            baseClasses:
+              "bg-gradient-to-br from-red-600 to-red-800 border-2 border-red-400 animate-bounce shadow-xl",
+            numberColor: "text-white",
+            labelColor: "text-red-100 font-bold",
+            labelText:  isCallWaiter ? "CALLING!" : "ALERT",
+            icon: (
+              <FaConciergeBell className="text-white text-2xl animate-wiggle" />
+            ),
+            glow: "shadow-red-600/50",
+        };
     }
 
     // ---------------------------------------------------------
@@ -190,6 +226,13 @@ export default function TableCard({ table, session, onClick, isTransferMode, isS
         ${cardStyle.baseClasses} ${cardStyle.glow}
       `}
     >
+      {/* LOADING OVERLAY */}
+      {isLoading && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 rounded-2xl flex items-center justify-center">
+             <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+      )}
+
       {/* Header: Icon + Guest Count */}
       <div className="w-full flex justify-between items-start h-8">
         {cardStyle.icon && (

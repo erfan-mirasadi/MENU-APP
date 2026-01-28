@@ -1,10 +1,11 @@
 'use client'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { MapControls, Environment, RoundedBox, useCursor } from '@react-three/drei' // Removed PerspectiveCamera, Text, useTexture
+import { MapControls, Environment, RoundedBox, useCursor, Html } from '@react-three/drei' // Removed PerspectiveCamera, Text, useTexture
 import { useState, useEffect, useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { MapCamera, MapFloor, TableVisual, getFloorColor } from './MapShared'
 import { useRestaurantFeatures } from '@/app/hooks/useRestaurantFeatures'
+import { FaFileInvoiceDollar } from 'react-icons/fa' // Added Icon
 
 // Minimalist Avatar Component
 function CustomerAvatar({ position, color }) {
@@ -60,7 +61,7 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
   const getBaseColor = (s) => {
       if (s === 'ordered') return '#f97316' // Orange
       if (s === 'active' || s === 'confirmed') return '#22c55e' // Green
-      if (s === 'payment_requested' || s === 'waiting_payment') return '#ef4444' // Red
+      if (s === 'payment_requested' || s === 'waiting_payment') return '#3b82f6' // BLUE 
       if (s === 'source') return '#6b7280' // Gray
       if (s === 'merge_target') return '#ea580c' // Dark Orange
       if (s === 'move_target') return '#16a34a' // Green
@@ -101,10 +102,11 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
           materialRef.current.color.set('#22c55e')
       }
       else if (status === 'payment_requested') {
-          // Red Glow (Bill Request)
-          materialRef.current.emissive.set('#ef4444')
-          materialRef.current.emissiveIntensity = 0.6
-          materialRef.current.color.set('#ef4444')
+          // Blue Blink (Bill Request) - CHANGED from Red Static
+          const intensity = 0.5 + Math.sin(time * 10) * 0.5 // Very Fast Blink
+          materialRef.current.emissive.set('#3b82f6')
+          materialRef.current.emissiveIntensity = intensity
+          materialRef.current.color.set('#3b82f6')
       }
        else if (status === 'ordering' || status === 'kitchen_sent') {
           // Sent to Kitchen -> Solid Orange
@@ -194,6 +196,21 @@ function TableBox({ id, position, width = 2.2, depth = 2.2, tableNumber, status,
             materialRef={materialRef} // Pass ref for color animation
          />
       </mesh>
+
+      {/* BILL REQUEST ICON */}
+      {status === 'payment_requested' && (
+          <Html position={[1.1, 0.4, -1.2]} transform sprite scale={0.5}>
+              <div 
+                className="bg-[#2d303e]/40 text-white p-2 rounded-2xl shadow-xl shadow-orange-500/30 animate-bounce cursor-pointer flex items-center justify-center border border-white/50 backdrop-blur-md"
+                style={{ width: '50px', height: '50px' }}
+                onClick={(e) => {
+                    e.stopPropagation() // Prevent table click
+                }}
+              >
+                  <FaFileInvoiceDollar size={28} />
+              </div>
+          </Html>
+      )}
 
       {/* Customer Avatars (Meeples) */}
       {poufs.map((pouf, i) => (

@@ -11,6 +11,7 @@ export default function TableGrid({
   loadingTransfer,
   role = "waiter", // 'waiter' | 'cashier'
   sortingMode = "numeric", // 'numeric' | 'priority'
+  resolvingTableId = null, // Added prop
 }) {
   const sortedTables = useMemo(() => {
     // Clone tables to avoid mutating the original array
@@ -106,6 +107,7 @@ export default function TableGrid({
             isTransferMode={isTransferMode}
             isSource={sourceTableId === table.id}
             role={role}
+            isLoading={resolvingTableId === table.id} // Pass loading state
           />
         );
       })}

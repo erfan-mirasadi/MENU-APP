@@ -13,6 +13,7 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
   const [cartItems, setCartItems] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [guestId, setGuestId] = useState(null);
+  const [tableId, setTableId] = useState(null); // Local state for resolved UUID
   const [isLoading, setIsLoading] = useState(true);
 
   // استفاده از Ref برای جلوگیری از رندرهای تکراری در لاگ
@@ -47,6 +48,7 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
         }
 
         const realTableUuid = tableData.id;
+        if (!ignore) setTableId(realTableUuid); // Store resolved UUID
         const realRestaurantId = tableData.restaurant_id;
 
         // Check for active session
@@ -203,6 +205,7 @@ export const useCart = (tableNumberFromUrl, restaurantId) => {
     submitOrder,
     isLoading,
     sessionData,
+    tableId: tableId, // Expose the resolved Table UUID
   };
 };
 

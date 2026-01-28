@@ -7,6 +7,7 @@ import Loader from "@/components/ui/Loader";
 import HiddenARLauncher from "@/components/ui/HiddenARLauncher";
 import { useParams } from "next/navigation";
 import { useCart } from "@/app/hooks/useCart";
+import ServiceButtons from "@/components/ui/ServiceButtons"; // Imported ServiceButtons
 
 // --- GLOBAL VARIABLES ---
 const gyroData = { x: 0, y: 0 };
@@ -22,6 +23,7 @@ export default function ThreeDLayout({ restaurant, categories }) {
     submitOrder,
     isLoading: isLoadingCart,
     sessionData,
+    tableId, // Destructure tableId
   } = useCart(params?.table_id, restaurant.id);
 
   // --- STATE ---
@@ -212,6 +214,13 @@ export default function ThreeDLayout({ restaurant, categories }) {
         /* --- CART STATE --- */
         isCartOpen={isCartOpen}
         setIsCartOpen={setIsCartOpen}
+      />
+      
+      {/* --- SERVICE BUTTONS --- */}
+      <ServiceButtons 
+        restaurantId={restaurant.id}
+        tableId={tableId} // Use resolved UUID
+        sessionId={sessionData?.id}
       />
     </div>
   );
